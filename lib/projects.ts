@@ -1,25 +1,4 @@
-import { site, type Project } from "@/content/site"
-
-const LINE_COUNT = 4
-
-/** CSS colour for a line token (1-based, cycles through the four lines). */
-export function lineColor(n: number) {
-  return `var(--line-${((n - 1) % LINE_COUNT) + 1})`
-}
-
-function projectIndex(project: Project) {
-  return site.projects.findIndex((p) => p.slug === project.slug)
-}
-
-/** Station code, e.g. "JF 3". Stable: derived from the order in site.projects. */
-export function projectCode(project: Project) {
-  return `JF ${projectIndex(project) + 1}`
-}
-
-/** Each project rides its own line colour. */
-export function projectLine(project: Project) {
-  return lineColor(projectIndex(project) + 1)
-}
+import { site } from "@/content/site"
 
 /** Featured projects; falls back to the first projects if none are flagged. */
 export function featuredProjects(max: number) {

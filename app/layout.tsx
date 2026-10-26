@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Overpass, Overpass_Mono } from "next/font/google"
+import { JetBrains_Mono, Jost } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -7,12 +7,10 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { site } from "@/content/site"
 import { cn } from "@/lib/utils"
 
-const overpass = Overpass({ subsets: ["latin"], variable: "--font-overpass" })
+const jost = Jost({ subsets: ["latin"], variable: "--font-jost" })
 
-const overpassMono = Overpass_Mono({
-  subsets: ["latin"],
-  variable: "--font-overpass-mono",
-})
+// The trace instrument's own face (an interface fragment), never page text.
+const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" })
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -33,14 +31,14 @@ export default function RootLayout({
       lang="en"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={cn("antialiased", overpass.variable, overpassMono.variable, "font-sans")}
+      className={cn("antialiased", jost.variable, jetbrains.variable, "font-sans")}
     >
       <head>
         {/* Motion gates key off html.js, so without JavaScript nothing waits to be revealed (DESIGN.md §5). */}
         <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
       </head>
       <body>
-        <ThemeProvider defaultTheme="dark">
+        <ThemeProvider defaultTheme="light">
           <TooltipProvider delay={300}>
             {children}
           </TooltipProvider>

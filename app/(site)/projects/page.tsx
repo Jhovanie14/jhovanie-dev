@@ -1,79 +1,79 @@
 import type { Metadata } from "next"
 
-import { ContactCoupon } from "@/components/home/contact-coupon"
+import { Contact } from "@/components/home/contact"
 import { BookCall } from "@/components/layout/book-call"
 import { PageTransition } from "@/components/layout/page-transition"
+import { Reveal } from "@/components/motion/reveal"
 import { RiseText } from "@/components/motion/rise-text"
 import { ProjectCover } from "@/components/projects/project-cover"
-import { WorkIndex, type WorkItem } from "@/components/projects/work-index"
 import { site } from "@/content/site"
-import { projectLine } from "@/lib/projects"
 
-const { title, intro, count, labels, view, empty } = site.projectsPage
+const { title, intro, labels, empty } = site.projectsPage
 
 export const metadata: Metadata = { title, description: intro }
 
 export default function ProjectsPage() {
   const projects = [...site.projects].sort((a, b) => b.year - a.year)
-  const years = projects.map((p) => p.year)
-  const span =
-    years.length === 0
-      ? ""
-      : Math.min(...years) === Math.max(...years)
-        ? `${Math.max(...years)}`
-        : `${Math.min(...years)} to ${Math.max(...years)}`
-
-  const items: WorkItem[] = projects.map((project, i) => ({
-    slug: project.slug,
-    href: `/projects/${project.slug}`,
-    title: project.title,
-    summary: project.summary,
-    outcome: project.outcome,
-    role: project.role,
-    year: project.year,
-    stack: project.stack,
-    line: projectLine(project),
-    cover: (
-      <ProjectCover
-        project={project}
-        priority={i < 2}
-        fine
-        sizes="(min-width: 1024px) 44vw, (min-width: 768px) 50vw, 100vw"
-        className="aspect-auto size-full"
-      />
-    ),
-  }))
 
   return (
     <PageTransition>
-      {/* Header: oversized title against a short intro, on a 12-column grid. */}
-      <header className="frame grid gap-8 pt-10 lg:grid-cols-12 lg:items-end lg:gap-6 lg:pt-16">
-        <div className="lg:col-span-6">
-          <RiseText as="h1" text={title} by="chars" onLoad className="display pb-[0.06em]" />
-        </div>
-        <div className="lg:col-span-5 lg:col-start-8 lg:pb-3">
-          <p className="text-lead text-balance">{intro}</p>
-          {projects.length > 0 && (
-            <p className="mt-4 text-small text-muted-foreground">
-              {projects.length} {count}, {span}
-            </p>
-          )}
+      <header className="frame pt-[12svh] lg:pt-[16svh]">
+        <div className="lg:pl-[16%]">
+          <RiseText as="h1" text={title} by="chars" onLoad className="display" />
+          <p className="column mt-6 text-lead">{intro}</p>
         </div>
       </header>
 
-      <div className="frame mt-20 lg:mt-28">
+      <div className="frame pt-24 lg:pt-32">
         {projects.length === 0 ? (
-          <div className="rounded-2xl bg-card p-10">
-            <h2 className="text-lead font-semibold">{empty.title}</h2>
-            <p className="mt-3 max-w-md text-muted-foreground">{empty.body}</p>
-            <BookCall className="mt-7" />
+          <div className="column rounded-xl bg-surface p-8 lg:ml-[16%]">
+            <h2 className="text-heading font-medium">{empty.title}</h2>
+            <p className="mt-3 text-muted-foreground">{empty.body}</p>
+            <BookCall className="mt-6" />
           </div>
         ) : (
-          <WorkIndex items={items} labels={{ ...labels, view }} />
+          <ol className="flex flex-col gap-28 lg:gap-36">
+            {projects.map((project, i) => {
+              const rows = [
+                { term: labels.role, detail: project.role },
+                { term: labels.stack, detail: project.stack.join(", ") },
+              ]
+
+              return (
+                <li key={project.slug} id={project.slug} className="scroll-mt-24">
+                  <Reveal className="grid gap-8 lg:grid-cols-[16%_minmax(0,40rem)_minmax(0,1fr)] lg:gap-0">
+                    <p className="text-small text-muted-foreground tabular-nums lg:pt-2">{project.year}</p>
+                    <div>
+                      <h2 className="text-heading font-medium">{project.title}</h2>
+                      <p className="mt-3">{project.summary}</p>
+                      <dl className="mt-6 grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2 text-small">
+                        {rows.map(({ term, detail }) => (
+                          <div key={term} className="contents">
+                            <dt className="text-muted-foreground">{term}</dt>
+                            <dd>{detail}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                      <p className="mt-6">
+                        <span className="text-small text-muted-foreground">{labels.outcome}</span>
+                        <span className="mt-1 block font-medium">{project.outcome}</span>
+                      </p>
+                    </div>
+                    <ProjectCover
+                      project={project}
+                      priority={i === 0}
+                      sizes="(min-width: 1024px) 28vw, 100vw"
+                      className="lg:ml-12"
+                    />
+                  </Reveal>
+                </li>
+              )
+            })}
+          </ol>
         )}
       </div>
 
-      <ContactCoupon from="/projects" />
+      <Contact />
     </PageTransition>
   )
 }

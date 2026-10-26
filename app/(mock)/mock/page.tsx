@@ -8,12 +8,10 @@ import {
   IconBrandX,
 } from "@tabler/icons-react"
 
-import { CopyEmail } from "@/components/copy-email"
-import { LocalTime } from "@/components/home/local-time"
+import { LocalTime } from "@/components/local-time"
 import { ScrollNav } from "@/components/mock/scroll-nav"
 import { ProjectCover } from "@/components/projects/project-cover"
 import { site, type Experience } from "@/content/site"
-import { projectLine } from "@/lib/projects"
 
 /*
  * "Quiet senior" mock of the Home page, for review before replacing the
@@ -48,7 +46,7 @@ function Prose({ text }: { text: string }) {
 
 function Tags({ items }: { items: string[] }) {
   return (
-    <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={site.ui.stack}>
+    <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Stack">
       {items.map((t) => (
         <li
           key={t}
@@ -132,13 +130,12 @@ export default function MockHome() {
                 <a href={`mailto:${site.email}`} className="hover:text-foreground">
                   {site.email}
                 </a>
-                <CopyEmail className="size-8" />
               </span>
             </div>
             <div className="mt-8 flex items-center justify-between gap-4">
               <ul className="-ml-1.5 flex items-center gap-1">
-                {site.socials.map(({ label, href, icon }) => {
-                  const Icon = socialIcons[icon as keyof typeof socialIcons]
+                {site.socials.map(({ label, href }) => {
+                  const Icon = socialIcons[label.toLowerCase() as keyof typeof socialIcons]
                   if (!Icon) return null
                   return (
                     <li key={href}>
@@ -156,7 +153,7 @@ export default function MockHome() {
                 })}
               </ul>
               <span className="text-xs text-muted-foreground">
-                <LocalTime timeZone={site.timezone} label={site.home.localTimeLabel} />
+                <LocalTime timeZone={site.timezone} label="local time" />
               </span>
             </div>
           </div>
@@ -210,7 +207,6 @@ export default function MockHome() {
                 <li
                   key={project.slug}
                   className={listItem}
-                  style={{ "--line": projectLine(project) } as React.CSSProperties}
                 >
                   <span aria-hidden className={itemSurface} />
                   <div className="relative z-10 order-2 sm:order-1 sm:col-span-2">
