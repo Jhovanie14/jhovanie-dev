@@ -35,6 +35,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn("antialiased", overpass.variable, overpassMono.variable, "font-sans")}
     >
+      <head>
+        {/* Motion gates key off html.js, so without JavaScript nothing waits to be revealed (DESIGN.md §5). */}
+        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+      </head>
       <body>
         <ThemeProvider defaultTheme="dark">
           <TooltipProvider delay={300}>

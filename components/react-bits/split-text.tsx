@@ -1,12 +1,44 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText as GSAPSplitText } from 'gsap/SplitText';
 import { useGSAP } from '@gsap/react';
 
 gsap.registerPlugin(ScrollTrigger, GSAPSplitText, useGSAP);
+
+export type SplitTextEffect = 'rise' | 'fade' | 'blur' | 'flip' | 'pop' | 'skew' | 'wave';
+
+export interface SplitTextProps {
+  text: string;
+  id?: string;
+  className?: string;
+  delay?: number;
+  duration?: number;
+  ease?: string | ((t: number) => number);
+  splitType?: 'chars' | 'words' | 'lines' | 'words, chars';
+  from?: gsap.TweenVars;
+  to?: gsap.TweenVars;
+  threshold?: number;
+  rootMargin?: string;
+  tag?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span';
+  textAlign?: CSSProperties['textAlign'];
+  staggerFrom?: 'start' | 'center' | 'end' | 'edges' | 'random';
+  mask?: boolean;
+  effect?: SplitTextEffect;
+  trigger?: 'view' | 'load' | 'hover' | 'click';
+  loop?: boolean;
+  loopDelay?: number;
+  hoverEffect?: 'none' | 'lift' | 'wave';
+  color?: string;
+  accentColor?: string;
+  onLetterAnimationComplete?: () => void;
+}
+
+type Look = { from: gsap.TweenVars; to: gsap.TweenVars; ease: string | ((t: number) => number) };
+type Spring = { y: number; v: number };
+type Kick = { index: number; velocity: number; at: number };
 
 const DEFAULT_FROM = { opacity: 0, y: 40 };
 const DEFAULT_TO = { opacity: 1, y: 0 };
@@ -16,11 +48,12 @@ const KICK = 0.024;
 
 const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
-const fontsAreLoaded = () => typeof document !== 'undefined' && (!document.fonts || document.fonts.status === 'loaded');
+const fontsAreLoaded = (): boolean =>
+  typeof document !== 'undefined' && (!document.fonts || document.fonts.status === 'loaded');
 
-const waveEase = t => 1 - Math.cos(t * Math.PI * 1.5) * Math.pow(1 - t, 1.2);
+const waveEase = (t: number) => 1 - Math.cos(t * Math.PI * 1.5) * Math.pow(1 - t, 1.2);
 
-const getEffect = (effect, em) => {
+const getEffect = (effect: SplitTextEffect, em: number): Look => {
   switch (effect) {
     case 'fade':
       return { from: { opacity: 0 }, to: { opacity: 1 }, ease: 'power2.inOut' };
@@ -55,6 +88,7 @@ const getEffect = (effect, em) => {
 
 const SplitText = ({
   text,
+  id,
   className = '',
   delay = 50,
   duration = 1.25,
@@ -76,9 +110,9 @@ const SplitText = ({
   color,
   accentColor,
   onLetterAnimationComplete
-}) => {
-  const ref = useRef(null);
-  const completedTextRef = useRef(null);
+}: SplitTextProps) => {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const completedTextRef = useRef<string | null>(null);
   const onCompleteRef = useRef(onLetterAnimationComplete);
   const liveRef = useRef({ trigger, hoverEffect, accentColor });
   const [fontsLoaded, setFontsLoaded] = useState(fontsAreLoaded);
@@ -133,33 +167,37 @@ const SplitText = ({
             ? `-=${Math.abs(marginValue)}${marginUnit}`
             : `+=${marginValue}${marginUnit}`;
       const start = `top ${startPct}%${sign}`;
-      const unit = splitType.includes('chars') ? 'chars' : splitType.includes('words') ? 'words' : 'lines';
+      const unit: 'chars' | 'words' | 'lines' = splitType.includes('chars')
+        ? 'chars'
+        : splitType.includes('words')
+          ? 'words'
+          : 'lines';
 
       const em = parseFloat(getComputedStyle(el).fontSize) || 16;
       const custom = from !== undefined || to !== undefined;
       const look = getEffect(effect, em);
-      const fromVars = custom ? { ...(from || DEFAULT_FROM) } : look.from;
-      const toVars = custom ? { ...(to || DEFAULT_TO) } : look.to;
+      const fromVars: gsap.TweenVars = custom ? { ...(from || DEFAULT_FROM) } : look.from;
+      const toVars: gsap.TweenVars = custom ? { ...(to || DEFAULT_TO) } : look.to;
       const easing = ease || (custom ? 'power3.out' : look.ease);
       const settle = custom ? 'willChange' : 'transform,filter,willChange';
       const exit = Math.max(0.35, duration * 0.55);
 
-      let pieces = [];
-      let movers = [];
+      let pieces: Element[] = [];
+      let movers: HTMLElement[] = [];
       let order = gsap.utils.distribute({ each: delay / 1000, from: staggerFrom });
       let revealed = completedTextRef.current === text;
-      let intro = null;
-      let busy = null;
-      let queued = null;
+      let intro: gsap.core.Timeline | null = null;
+      let busy: gsap.core.Timeline | null = null;
+      let queued: gsap.core.Tween | null = null;
       let raf = 0;
       let last = 0;
-      let centers = null;
+      let centers: { x: number; y: number }[] | null = null;
       const lift = em * 0.2;
-      const springs = [];
-      const kicks = [];
+      const springs: Spring[] = [];
+      const kicks: Kick[] = [];
       const pointer = { x: 0, y: 0, inside: false };
 
-      const reveal = (initial, vars) => {
+      const reveal = (initial: boolean, vars?: gsap.TimelineVars) => {
         const accent = liveRef.current.accentColor;
         const tl = gsap.timeline(vars);
         tl.fromTo(
@@ -230,7 +268,7 @@ const SplitText = ({
         });
       };
 
-      const tick = now => {
+      const tick = (now: number) => {
         raf = 0;
         const dt = Math.min(0.032, Math.max(0.001, (now - last) / 1000));
         last = now;
@@ -271,13 +309,13 @@ const SplitText = ({
         raf = requestAnimationFrame(tick);
       };
 
-      const locate = e => {
+      const locate = (e: PointerEvent) => {
         const box = el.getBoundingClientRect();
         pointer.x = e.clientX - box.left;
         pointer.y = e.clientY - box.top;
       };
 
-      const onEnter = e => {
+      const onEnter = (e: PointerEvent) => {
         locate(e);
         pointer.inside = true;
         if (!revealed) return;
@@ -289,14 +327,14 @@ const SplitText = ({
           const now = performance.now();
           const speed = em * 9;
           const velocity = (em * 0.16) / KICK;
-          centers.forEach((center, index) => {
+          centers?.forEach((center, index) => {
             kicks.push({ index, velocity, at: now + (Math.abs(center.x - pointer.x) / speed) * 1000 });
           });
         }
         wake();
       };
 
-      const onMove = e => {
+      const onMove = (e: PointerEvent) => {
         locate(e);
         pointer.inside = true;
         if (!revealed || liveRef.current.hoverEffect !== 'lift') return;
@@ -322,9 +360,9 @@ const SplitText = ({
         wordsClass: 'split-word',
         charsClass: 'split-char',
         reduceWhiteSpace: false,
-        onSplit: self => {
+        onSplit: (self: GSAPSplitText) => {
           pieces = [self[unit], self.chars, self.words, self.lines].find(list => list.length) || [];
-          movers = mask && self.masks?.length === pieces.length ? self.masks : pieces;
+          movers = (mask && self.masks?.length === pieces.length ? self.masks : pieces) as HTMLElement[];
           order = gsap.utils.distribute({ each: delay / 1000, from: staggerFrom });
           centers = null;
           springs.length = 0;
@@ -407,18 +445,17 @@ const SplitText = ({
   return (
     <Tag
       key={text}
+      id={id}
       ref={ref}
-      className={`split-parent ${className}`}
+      className={`split-parent inline-block whitespace-normal ${clip ? 'overflow-hidden' : 'overflow-visible'} ${trigger === 'click' ? 'cursor-pointer' : ''} ${className}`}
       style={{
         textAlign,
-        overflow: clip ? 'hidden' : 'visible',
-        display: 'inline-block',
-        whiteSpace: 'normal',
         wordWrap: 'break-word',
-        color,
-        cursor: trigger === 'click' ? 'pointer' : undefined,
-        visibility: ready ? undefined : 'hidden'
+        color
       }}
+      // House change: hidden only under html.js + no-preference (globals.css), so the text
+      // still shows without JavaScript instead of staying at visibility: hidden.
+      data-split={ready ? 'ready' : 'pending'}
     >
       {text}
     </Tag>

@@ -12,9 +12,7 @@ const directional = {
 export function PageTransition({ children }: { children: React.ReactNode }) {
   return (
     <ViewTransition enter={directional} exit={directional} default="none">
-      <div className="w-full px-4 py-6 sm:px-6 md:px-10 md:py-10 lg:px-12 lg:pt-3 lg:pb-16">
-        {children}
-      </div>
+      <div className="w-full">{children}</div>
     </ViewTransition>
   )
 }

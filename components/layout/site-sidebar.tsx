@@ -28,7 +28,7 @@ export function SiteSidebar() {
       </SidebarHeader>
       <SidebarSeparator className="mx-6" />
       <SidebarContent className="px-3.5 py-4">
-        <NavLinks markerId="sidebar-marker" />
+        <NavLinks />
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border px-6 py-4">
         <ThemeToggle />

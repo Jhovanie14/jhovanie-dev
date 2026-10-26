@@ -37,3 +37,6 @@ pnpm-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# taste-skill inspector screenshots and reports
+/.taste-skill/

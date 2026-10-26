@@ -11,9 +11,9 @@ function projectIndex(project: Project) {
   return site.projects.findIndex((p) => p.slug === project.slug)
 }
 
-/** Station code, e.g. "JF-03". Stable: derived from the order in site.projects. */
+/** Station code, e.g. "JF 3". Stable: derived from the order in site.projects. */
 export function projectCode(project: Project) {
-  return `JF-${String(projectIndex(project) + 1).padStart(2, "0")}`
+  return `JF ${projectIndex(project) + 1}`
 }
 
 /** Each project rides its own line colour. */

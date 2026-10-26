@@ -28,7 +28,7 @@ function subscribe(onChange: () => void) {
   return () => clearInterval(id)
 }
 
-export function LocalTime({ timeZone, label }: { timeZone: string; label: string }) {
+export function LocalTime({ timeZone, label }: { timeZone: string; label?: string }) {
   const time = useSyncExternalStore(
     subscribe,
     () => formatTime(timeZone),
@@ -39,10 +39,8 @@ export function LocalTime({ timeZone, label }: { timeZone: string; label: string
 
   return (
     <span>
-      <time className="font-mono text-foreground tabular-nums">
-        {time === PENDING ? "--:--" : time}
-      </time>{" "}
-      {label}
+      <time className="tabular-nums">{time === PENDING ? "--:--" : time}</time>
+      {label && ` ${label}`}
     </span>
   )
 }

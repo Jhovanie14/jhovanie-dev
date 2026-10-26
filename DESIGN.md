@@ -46,56 +46,72 @@ Each project is assigned one line colour (cycle in order). Line 1 is also the si
 
 Tailwind: `bg-line-1`, `border-line-2`, `text-warning`, …
 
-**Edge light** (`edge-light` utility): every card carries a 1px line along its bottom edge, brightest at the centre, in `--edge` (defaults to line 1; project cards use their own line). This is the one gradient the system allows.
+**Paper** (`paper` utility): the printed pieces of the line (the hero ticket, the contact ticket) invert the theme: enamel paper with ink text on the night map, ink paper on the day map. Secondary text on paper uses `--paper-muted`.
 
-**Never:** other gradients, glows, coloured halos, glass panels, gradient text.
+**Never:** gradients (a flat scrim over a photograph is the one exception), glows, coloured halos, glass panels, gradient text, shadows on things at rest. Page content separates surfaces by a tone step (`bg-card`, `bg-muted`) or space, never hairlines or 1px outlined boxes. The sidebar shell keeps its own border and separator.
 
 ## 3. Type
 
 | Role | Face | Token |
 | --- | --- | --- |
-| Display, headings, UI, body | **Overpass** (variable 100–900, derived from US highway signage) | `--font-sans`, `--font-heading` |
-| Data: dates, times, station/project codes, tabular numbers | **Overpass Mono** (variable) | `--font-mono` |
+| Everything | **Overpass** (variable 100–900, derived from US highway signage) | `--font-sans`, `--font-heading` |
+| Real code only (the build receipt) | **Overpass Mono** | `--font-mono` |
 
-Loaded with `next/font/google` (self-hosted, no layout shift) as `--font-overpass` / `--font-overpass-mono`.
+Five steps, defined in `@theme` (`app/globals.css`). Nothing else is set on page content:
 
-Scale (Tailwind sizes):
-
-| Step | Size / weight | Use |
+| Step | Token / utility | Use |
 | --- | --- | --- |
-| Display | `text-5xl`–`text-6xl` / 600, `tracking-tight` | Page titles (max 6rem) |
-| H2 | `text-2xl` / 600 | Section headings |
-| H3 | `text-lg` / 600 | Card titles |
-| Body | `text-base` / 400, `leading-relaxed`, measure ≤ `65ch` | Prose |
-| Small | `text-sm` | UI labels, nav, role |
-| Data | `font-mono text-xs tabular-nums` | Dates, codes |
+| Display | `--text-display` (`display` utility), 700, tracking -0.045em, leading 0.9 | The name, page titles, service poster lines. Sized `min(var(--text-display), Ncqw)` where a column must hold the longest word |
+| Heading | `text-heading`, usually weight 300 | Section titles |
+| Lead | `text-lead` | Statements, facts, the intro under a title |
+| Body | `text-body` (17px) | Prose, measure ≤ 65ch |
+| Small | `text-small` (14px) | Notes, dates, credits |
 
-Rules: mono is for **data only**, never decoration. No eyebrows/kickers above headings. Headings use `text-balance`.
+Rules: no monospace outside real code. No eyebrows or small labels above headings. No 01/02/03 numbering (station codes read "JF 3"). Headings use `text-balance`. `cn()` (`lib/utils.ts`) knows these five steps as font sizes, so `text-heading text-foreground` keeps both.
 
 ## 4. Space, radius, layout
 
-- **Spacing:** Tailwind's 4px scale. Tight inside groups (`gap-1`–`gap-3`), generous between sections (`py-16`–`py-24`). More space above a heading than below it.
-- **Radius:** `--radius: 0.5rem` (signage corners). Discs and markers are full circles.
-- **Shell:** at **`lg` (≥ 1024px)** the sidebar is a **floating panel**: `--sidebar-width: 18rem`, fixed, inset `0.75rem` from the top, bottom and left, `rounded-2xl`, 1px border. Content starts at `sidebar-width + 0.75rem`, and the first card aligns with the panel's top. Below `lg`, a 56px top bar (`h-14`) with a menu **Sheet** holding the same profile, CTAs and nav.
-- **Content:** full width, gutters `px-4 sm:px-6 md:px-10 lg:px-12`.
-- **Cards:** `rounded-2xl`, `bg-card`, 1px border, no shadow. Used for framed moments (the hero), never as a grid of same-size boxes.
-- **Project cards:** framed cards with the cover (or a line placard showing the project code) and a round arrow button that fills with the project's line colour on hover. Featured work is a bento: the first card spans the row (cover beside text), the next two share a row.
-- **Section header:** a small pill label (dot + word) on the left, a big title on the right (`text-5xl`, weight 500, tracking -0.035em); stacked on mobile. Component: `SectionHeader`.
-- **CTAs:** pills (`rounded-full`, `h-10`–`h-11`) with a detached round arrow that turns to point right on hover (`CtaPill`). Primary = signal orange with dark ink; secondary = outline.
+- **Frame:** every section sits in the `frame` utility: one pair of margins, `clamp(1rem, 4vw, 3rem)`, max 96rem.
+- **Rhythm:** sections are `pt-32 lg:pt-48` apart; space inside a section is clearly smaller.
+- **Radius:** panels `rounded-2xl`; buttons are full pills, decided once. Discs and markers are full circles.
+- **Shell:** at **`lg` (≥ 1024px)** the sidebar is a **floating panel**: `--sidebar-width: 18rem`, fixed, inset `0.75rem` from the top, bottom and left, `rounded-2xl`, 1px border. Content starts at `sidebar-width + 0.75rem`, and the hero aligns with the panel's top. Below `lg`, a 56px top bar (`h-14`) with a menu **Sheet** holding the same profile, CTAs and nav. The shell is deliberate and stays, even where the taste inspector reports the off-centre frame.
+- **Stationery** (`components/stationery.tsx`): the page is the printed timetable of the JF line. Pieces are filled shapes with real edges, drawn as SVG patterns so circles stay round: `CutEdge` (scallop or zigzag), `Perforation` (round holes in the page ground), `Notches` (half circles where a perforation meets an edge).
+  - Hero: a **ticket** (`paper`), name and pitch on the body, illustration on the stub, trip details in ticket columns.
+  - Services: **poster lines**, one service per line at display size, each a station on a drawn route.
+  - Process: a **timetable slip** with dot leaders and a zigzag bottom; the last row inverted.
+  - Letter: a sheet with a tear-off strip carrying the email.
+  - Contact: a signal-orange **coupon** held against the platform photograph.
+  - Footer: the **back of the card**, scalloped top, the name at full width, and the real build receipt.
+- **Primary action:** `BookCall`, a solid signal-orange pill (`h-11`+). Secondary actions are plain text links with an arrow.
 
 ## 5. Motion
 
-One authored moment per view. Everything respects `prefers-reduced-motion`.
+GSAP (with ScrollTrigger and SplitText) is the only motion library; `lib/motion.ts` registers the plugins and holds tokens that mirror the CSS ones. Two React Bits components (`components/react-bits/`, from the `@react-bits` registry) do the component animation, wrapped with the house tokens:
+
+- `RiseText` (React Bits **SplitText**): headings rise out of a line mask. Lines for headings; characters only for a heading of one to three words (the name, page titles).
+- `Reveal` (React Bits **AnimatedContent**): a section's parts arrive in reading order, rising 24px, staggered 70ms, once, as the block's top reaches 88% of the viewport.
+
+**When to add motion.** Ask four questions first: how often is it seen, what is it for, which easing, how long. Valid reasons: it shows where something came from, confirms an action, keeps a change from jarring, explains how the work runs, or it is the signature move. "It looks nice" is only valid for the signature move.
+
+| Moment | What moves | Why |
+| --- | --- | --- |
+| Hero load (once, ≤ 1.2s) | Name rises by character; illustration opens from the bottom and settles; pitch and actions arrive | First impression, still readable on the first frame |
+| **Signature:** services route | The line draws from station to station, locked to the scrollbar; each station fills as the line reaches it | It is the idea: database to deploy, as a route |
+| Section entrances | Heading lines rise, then text, then pictures; lists arrive row by row | Reading order, once |
+| Project covers | Open from the bottom (clip) while the picture settles from 108% | Shows the work arriving |
+| Hero picture | Drifts 6% as the hero leaves, scrubbed | The one moving picture |
+| Nav pill | Glides from the old station to the new (GSAP FLIP, expo out 0.55s) | Shows where you came from |
+| Controls | `press` utility: scale 0.97 on press; colour hovers 180ms | Feedback under the hand |
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `--ease-glide` | `cubic-bezier(0.22, 1, 0.36, 1)` | Exponential ease-out for movement |
-| `--vt-exit` | `150ms` | Old page fades out (fast) |
-| `--vt-enter` | `210ms` | New page fades in, delayed by `--vt-exit` |
-| `--vt-move` | `400ms` | New page slide |
-| `--vt-offset` | `60px` | Slide distance |
-| `spring.marker` (`lib/motion.ts`) | stiffness 380, damping 34, mass 0.8 | Active nav pill glide: damped and physical, never snapped |
-| Logo strip | `45s` linear loop | Monochrome logos + bold names, edges masked. Pauses on hover and on keyboard focus; with reduced motion it stops and wraps |
+| `--ease-glide` / `ease.out` | `cubic-bezier(0.22, 1, 0.36, 1)` / `quint.out` | Entrances and moving hovers under 600ms |
+| `--ease-expo` / `ease.expo` | `cubic-bezier(0.16, 1, 0.3, 1)` / `expo.out` | Reveals of 800ms+, line rises |
+| `--ease-travel` / `ease.inOut` | `cubic-bezier(0.76, 0, 0.24, 1)` / `quart.inOut` | Wipes and openings |
+| `--ease-exit` | `cubic-bezier(0.55, 0.055, 0.675, 0.19)` | Only for the old page leaving |
+| `--vt-exit` / `--vt-enter` / `--vt-move` / `--vt-offset` | 150ms / 210ms / 400ms / 60px | Page transitions |
+
+Rules: transform, opacity and clip-path only. No bounce, no custom cursor, no preloader, no scroll hijacking, no loops except the route-art train on hover. Hidden start states exist only under `html.js` (an inline script in `app/layout.tsx`) and `prefers-reduced-motion: no-preference`, with a CSS fallback that shows everything after 2–2.5s if a script never runs. Every GSAP effect sits inside `gsap.matchMedia()`, so under reduced motion the page is simply at rest.
 
 ### Page transitions (React `<ViewTransition>`)
 
@@ -121,7 +137,7 @@ One authored moment per view. Everything respects `prefers-reduced-motion`.
 │ ● (⌂ Home          )   │  Route line (line-1) with station discs.
 │ │                      │  The active disc fills; the active pill
 │ ○  ▦ Projects          │  (icon + label) glides between stations
-│ │                      │  (motion layoutId).
+│ │                      │  (GSAP FLIP in nav-links.tsx).
 │ ○  ◯ About             │
 │ │                      │
 │ ○  ✉ Contact           │
@@ -132,9 +148,10 @@ One authored moment per view. Everything respects `prefers-reduced-motion`.
 
 ## 6b. Imagery
 
-- Portrait and hero are **illustrations** (`public/images/`); the orange shirt ties them to line 1.
-- The hero illustration sits in the card's right column and fades into the card toward the copy (`mask-l` on desktop, `mask-b` on mobile). Fades are masks, never gradient overlays.
-- Tech marks come from Tabler (one stroke weight), in `muted-foreground`, brightening on hover. PostgreSQL, DigitalOcean and Claude have no Tabler mark and use generic icons (database, cloud, sparkles).
+- Portrait and hero are **illustrations** (`public/images/`); the orange shirt ties them to line 1. They are used large, as plates, never faded into a card.
+- The **build receipt** (`components/home/build-receipt.tsx`, `data-ui`) is a real interface fragment: the Next.js version, routes and commit of the build that made the page (`lib/build-info.ts`).
+- One found photograph: a black-and-white subway platform by Matthew Wiebe (Unsplash licence), behind the contact coupon as atmosphere, credited in the footer (`site.credits`). It is never presented as Jhovanie's own place.
+- Project covers come from `public/work/<slug>/cover.png`; until they exist, each project's generated route map stands in.
 
 ## 7. Browser surfaces
 

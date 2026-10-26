@@ -49,7 +49,7 @@ export function MobileHeader() {
             <ShellCtas onNavigate={close} />
           </SheetHeader>
           <div className="flex-1 overflow-y-auto border-t border-sidebar-border px-3.5 py-4">
-            <NavLinks markerId="sheet-marker" onNavigate={close} />
+            <NavLinks onNavigate={close} />
           </div>
           <div className="border-t border-sidebar-border px-6 py-4">
             <ThemeToggle />

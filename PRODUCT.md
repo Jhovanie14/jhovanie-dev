@@ -32,7 +32,7 @@ How we'll measure it: clicks on "Book a call", meetings booked, and case-study v
 
 - **Voice:** short, plain, first-person sentences. No buzzwords and no "passionate rockstar ninja". Let outcomes speak. Example: *"I build and ship full-stack products, from the database to the deploy."*
 - **Visual:** product-grade polish in the vein of Linear, Vercel, and rauno.me. Lots of whitespace, one accent color, crisp type, a dark-first theme with a light mode.
-- **Motion (via `motion`):** subtle and purposeful. Fade/slide on scroll, smooth hover states, and a layout animation on the project cards. Respect `prefers-reduced-motion`.
+- **Motion (GSAP + React Bits, see DESIGN.md §5):** subtle and purposeful. Each move has a reason; one signature move per page. Respect `prefers-reduced-motion`.
 - **Playful touches (small, optional, never in the way):**
   - Cursor-following spotlight or glow on project cards
   - ⌘K / Ctrl+K command menu (navigate, copy email, toggle theme, book a call)

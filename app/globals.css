@@ -7,7 +7,7 @@
 @theme inline {
     --font-heading: var(--font-overpass);
     --font-sans: var(--font-overpass);
-    --font-mono: var(--font-overpass-mono);
+    --font-mono: var(--font-overpass-mono); /* taste-skill-ignore: code blocks only */
     --color-line-1: var(--line-1);
     --color-line-2: var(--line-2);
     --color-line-3: var(--line-3);
@@ -54,7 +54,26 @@
 }
 
 @theme {
+    /* Motion (DESIGN.md §5). lib/motion.ts mirrors these for GSAP. */
     --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-travel: cubic-bezier(0.76, 0, 0.24, 1);
+    --ease-exit: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+
+    /* Five type steps (DESIGN.md §3). Nothing else is set. */
+    --text-display: clamp(3.25rem, 7.4vw, 8rem);
+    --text-display--line-height: 0.9;
+    --text-display--letter-spacing: -0.045em;
+    --text-heading: clamp(2.25rem, 4.2vw, 4.25rem);
+    --text-heading--line-height: 1;
+    --text-heading--letter-spacing: -0.035em;
+    --text-lead: clamp(1.375rem, 2vw, 1.875rem);
+    --text-lead--line-height: 1.25;
+    --text-lead--letter-spacing: -0.02em;
+    --text-body: 1.0625rem;
+    --text-body--line-height: 1.6;
+    --text-small: 0.875rem;
+    --text-small--line-height: 1.45;
 }
 
 /* Day map */
@@ -141,21 +160,29 @@
 }
 
 /*
- * Edge light: a thin line along a card's bottom edge, brightest at the centre.
- * Colour comes from --edge (defaults to line 1). The one gradient the system allows.
+ * Paper: the printed pieces of the line (the hero ticket). Inverts the theme,
+ * so it is enamel on the night map and ink on the day map.
  */
-@utility edge-light {
-  position: relative;
-  &::after {
-    content: "";
-    position: absolute;
-    inset-inline: 10%;
-    bottom: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--edge, var(--line-1)), transparent);
-    opacity: 0.6;
-    pointer-events: none;
-  }
+@utility paper {
+  background-color: var(--foreground);
+  color: var(--background);
+  --paper-muted: color-mix(in oklch, var(--background) 74%, var(--foreground));
+}
+
+/* The page frame: one pair of equal outer margins at every width (DESIGN.md §4). */
+@utility frame {
+  width: 100%;
+  max-width: 96rem;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 3rem);
+}
+
+/* Display type: the name, poster lines. Masks keep descenders when lines rise. */
+@utility display {
+  font-size: var(--text-display);
+  line-height: var(--text-display--line-height);
+  letter-spacing: var(--text-display--letter-spacing);
+  font-weight: 700;
 }
 
 @layer base {
@@ -170,7 +197,7 @@
     scrollbar-color: var(--muted) transparent;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-body text-foreground;
     caret-color: var(--primary);
   }
   ::selection {
@@ -183,6 +210,48 @@
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
+  }
+}
+
+/* ---------- Motion gates (DESIGN.md §5) ---------- */
+
+/*
+ * Scroll reveals (React Bits AnimatedContent, [data-reveal]) and split headings
+ * ([data-split]) start hidden only when JavaScript is running (html.js) and
+ * motion is allowed. If a script never runs, the fallback shows them anyway.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .js [data-reveal],
+  .js [data-split="pending"] {
+    visibility: hidden;
+    animation: reveal-fallback 0s linear 2.5s forwards;
+  }
+  /* The hero's load sequence (components/home/hero-motion.tsx), pre-hidden so the first frame doesn't flash. */
+  .js [data-load] {
+    opacity: 0;
+    animation: reveal-fallback 0s linear 2s forwards;
+  }
+  .js [data-load-open] {
+    clip-path: inset(100% 0 0 0);
+    animation: reveal-fallback 0s linear 2s forwards;
+  }
+}
+@keyframes reveal-fallback {
+  to {
+    visibility: visible;
+    opacity: 1;
+    clip-path: inset(0);
+  }
+}
+
+/* Press feedback for every button-like control. */
+@utility press {
+  transition:
+    transform 140ms var(--ease-glide),
+    background-color 180ms ease,
+    color 180ms ease;
+  &:active {
+    transform: scale(0.97);
   }
 }
 
@@ -208,31 +277,31 @@
   animation: none;
 }
 
-/* Forward (to a lower station): old page drifts up and fades fast, new page rises from below. */
+/* Forward (to a later station): old page drifts up and leaves fast, new page rises from below. */
 ::view-transition-old(.nav-forward) {
   --vt-from: calc(var(--vt-offset) * -1);
   animation:
-    var(--vt-exit) ease-in both vt-fade reverse,
+    var(--vt-exit) var(--ease-exit) both vt-fade reverse,
     var(--vt-move) var(--ease-glide) both vt-slide reverse;
 }
 ::view-transition-new(.nav-forward) {
   --vt-from: var(--vt-offset);
   animation:
-    var(--vt-enter) ease-out var(--vt-exit) both vt-fade,
+    var(--vt-enter) var(--ease-glide) var(--vt-exit) both vt-fade,
     var(--vt-move) var(--ease-glide) both vt-slide;
 }
 
-/* Back (to a higher station): the mirror image. */
+/* Back (to an earlier station): the mirror image. */
 ::view-transition-old(.nav-back) {
   --vt-from: var(--vt-offset);
   animation:
-    var(--vt-exit) ease-in both vt-fade reverse,
+    var(--vt-exit) var(--ease-exit) both vt-fade reverse,
     var(--vt-move) var(--ease-glide) both vt-slide reverse;
 }
 ::view-transition-new(.nav-back) {
   --vt-from: calc(var(--vt-offset) * -1);
   animation:
-    var(--vt-enter) ease-out var(--vt-exit) both vt-fade,
+    var(--vt-enter) var(--ease-glide) var(--vt-exit) both vt-fade,
     var(--vt-move) var(--ease-glide) both vt-slide;
 }
 
@@ -260,9 +329,14 @@
   stroke-dasharray: 9 100;
   stroke-dashoffset: 9;
   opacity: 0;
-  transition: opacity 300ms;
+  transition: opacity 300ms ease;
 }
-.group:hover .route-train,
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .route-train {
+    opacity: 1;
+    animation: route-train 2.2s linear infinite;
+  }
+}
 [data-active] .route-train {
   opacity: 1;
   animation: route-train 2.2s linear infinite;
@@ -273,44 +347,17 @@
   }
 }
 
-/* ---------- Letter rise (page titles) ---------- */
-
-@keyframes rise {
-  from {
-    translate: 0 105%;
-  }
-}
-
-/* ---------- Stack strip (marquee) ---------- */
-
-@keyframes marquee {
-  to {
-    translate: -50% 0;
-  }
-}
-.marquee-track {
-  animation: marquee 45s linear infinite;
-}
-.marquee:hover .marquee-track,
-.marquee:focus-visible .marquee-track {
-  animation-play-state: paused;
-}
-
-/* Reduced motion: crossfade only, no sliding. */
+/* Reduced motion: crossfade only, no travel, no loops. */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(.nav-forward),
   ::view-transition-old(.nav-back) {
-    animation: var(--vt-exit) ease-in both vt-fade reverse;
+    animation: var(--vt-exit) ease both vt-fade reverse;
   }
   ::view-transition-new(.nav-forward),
   ::view-transition-new(.nav-back) {
-    animation: var(--vt-enter) ease-out both vt-fade;
+    animation: var(--vt-enter) ease both vt-fade;
   }
-  .marquee-track,
   .route-train {
-    animation: none !important;
-  }
-  .rise-letter {
     animation: none !important;
   }
 }

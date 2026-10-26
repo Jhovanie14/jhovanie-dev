@@ -31,8 +31,8 @@ export function CopyEmail({ className }: { className?: string }) {
       onClick={copy}
       aria-label={copied ? site.ui.copied : site.ui.copyEmail}
       className={cn(
-        "grid size-9 shrink-0 place-items-center rounded-full border text-muted-foreground transition-colors duration-300 hover:text-foreground",
-        copied && "border-line-2/60 text-line-2 hover:text-line-2",
+        "press grid size-11 shrink-0 place-items-center rounded-full bg-muted text-foreground hover:bg-accent",
+        copied && "text-line-2 hover:text-line-2",
         className
       )}
     >

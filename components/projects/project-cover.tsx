@@ -51,7 +51,7 @@ export function ProjectCover({
       <div className="absolute inset-0 transition-transform duration-700 ease-glide group-hover:scale-[1.04]">
         <RouteArt seed={project.slug} fine={fine} />
       </div>
-      <span className="absolute top-3 left-3 rounded-md border bg-card/80 px-2 py-0.5 font-mono text-xs text-muted-foreground tabular-nums">
+      <span className="absolute top-3 left-3 rounded-full bg-card px-3 py-1 text-small font-semibold">
         {projectCode(project)}
       </span>
     </div>

@@ -62,11 +62,7 @@ const linkSchema = z.object({
   href: z.string(),
 })
 
-/** A section's small pill label and its big title. */
-const sectionHeadingSchema = z.object({
-  label: z.string(),
-  title: z.string(),
-})
+const factSchema = z.object({ value: z.string(), note: z.string() })
 
 const skillGroupSchema = z.object({
   group: z.string(),
@@ -82,6 +78,7 @@ export const siteSchema = z.object({
   timezone: z.string(),
   availability: z.object({
     open: z.boolean(),
+    short: z.string(),
     label: z.string(),
   }),
   avatar: imageSchema,
@@ -99,51 +96,66 @@ export const siteSchema = z.object({
   socials: z.array(socialSchema),
   nav: z.array(navItemSchema),
   services: z.array(
-    z.object({ title: z.string(), description: z.string(), stack: z.array(z.string()).default([]) })
+    z.object({
+      title: z.string(),
+      /** Poster name: short enough for one line at display size. */
+      short: z.string().max(12),
+      description: z.string(),
+      stack: z.array(z.string()).default([]),
+    })
   ),
-  process: z.array(z.object({ title: z.string(), description: z.string() })).max(5),
+  process: z.array(z.object({ title: z.string(), when: z.string(), description: z.string() })).max(5),
   projects: z.array(projectSchema).max(6),
   experience: z.array(experienceSchema),
   skills: z.array(skillGroupSchema),
   home: z.object({
     heroImage: imageSchema,
     localTimeLabel: z.string(),
-    stripLabel: z.string(),
     secondaryCta: z.string(),
-    biography: sectionHeadingSchema.extend({
-      stats: z.object({ years: z.string(), projects: z.string(), tools: z.string() }),
-    }),
-    services: sectionHeadingSchema,
-    process: sectionHeadingSchema,
-    work: sectionHeadingSchema.extend({
+    ticket: z.object({ status: z.string(), time: z.string(), basedIn: z.string() }),
+    intro: z.object({ title: z.string(), body: z.string(), years: z.string(), stack: factSchema }),
+    work: z.object({
+      title: z.string(),
       allLabel: z.string(),
       caseStudy: z.string(),
-      liveSite: z.string(),
-      previous: z.string(),
-      next: z.string(),
-      roleLabel: z.string(),
-      yearLabel: z.string(),
       max: z.number().int().min(1).max(6),
     }),
-    experience: sectionHeadingSchema.extend({ present: z.string() }),
+    services: z.object({ title: z.string(), body: z.string() }),
+    process: z.object({ title: z.string(), body: z.string(), result: factSchema }),
+    letter: z.object({ title: z.string(), paragraphs: z.array(z.string()).min(1).max(5) }),
     contact: z.object({
-      label: z.string(),
       title: z.string(),
       body: z.string(),
+      image: imageSchema,
       recruiters: linkSchema,
     }),
   }),
-  footer: z.object({
-    contactTitle: z.string(),
-    builtWith: z.string(),
+  about: z.object({
+    title: z.string(),
+    intro: z.string(),
+    experienceTitle: z.string(),
+    skillsTitle: z.string(),
+    cv: z.string(),
+    present: z.string(),
   }),
+  contactPage: z.object({
+    title: z.string(),
+    intro: z.string(),
+    elsewhere: z.string(),
+  }),
+  footer: z.object({
+    title: z.string(),
+    message: z.string(),
+    build: z.string(),
+  }),
+  /** Found pictures: credited in the footer, never presented as Jhovanie's own. */
+  credits: z.array(linkSchema),
   projectsPage: z.object({
     title: z.string(),
     intro: z.string(),
     count: z.string(),
     labels: z.object({ role: z.string(), year: z.string(), stack: z.string() }),
     view: z.string(),
-    cta: z.object({ lead: z.string(), title: z.string() }),
     empty: z.object({ title: z.string(), body: z.string() }),
   }),
   ui: z.object({
@@ -197,6 +209,7 @@ export const site = siteSchema.parse({
   timezone: "UTC", // TODO: your IANA timezone, e.g. "Europe/London"
   availability: {
     open: true,
+    short: "Available",
     label: "Open to roles & projects",
   },
   avatar: { src: "/images/image_9deddd71.jpg", alt: "Illustrated portrait of Jhovanie Flores" },
@@ -225,31 +238,35 @@ export const site = siteSchema.parse({
   services: [
     {
       title: "Full-stack web apps",
+      short: "Web apps",
       description: "Laravel + Inertia + React or Next.js, built from schema to UI.",
       stack: ["Laravel", "Inertia", "React", "Next.js", "Tailwind CSS"],
     },
     {
       title: "APIs & data",
+      short: "APIs & data",
       description: "Clean APIs and well-modelled MySQL/PostgreSQL databases.",
       stack: ["Laravel", "PHP", "MySQL", "PostgreSQL"],
     },
     {
       title: "Deploy & infrastructure",
+      short: "Deploy",
       description: "Dockerized apps shipped on Vercel, DigitalOcean, and Cloudflare.",
       stack: ["Docker", "Cloudflare", "DigitalOcean", "Vercel"],
     },
     {
       title: "AI-assisted delivery",
+      short: "AI delivery",
       description: "Using Claude to ship faster and add AI features where they help.",
       stack: ["Claude"],
     },
   ],
   // TODO: draft copy — edit to match how you actually work.
   process: [
-    { title: "Intro call", description: "We talk goals, users and constraints. No slides." },
-    { title: "Scope & estimate", description: "A written plan: what ships first, timeline, and cost." },
-    { title: "Build & review", description: "Weekly previews on a live URL, so you see progress early." },
-    { title: "Launch & handover", description: "Deployed, monitored and documented, ready for traffic." },
+    { title: "Intro call", when: "Day one", description: "We talk goals, users and constraints. No slides." },
+    { title: "Scope & estimate", when: "Week one", description: "A written plan: what ships first, timeline, and cost." },
+    { title: "Build & review", when: "Every week", description: "Previews on a live URL, so you see progress early." },
+    { title: "Launch & handover", when: "Launch day", description: "Deployed, monitored and documented, ready for traffic." },
   ],
   projects: [
     placeholderProject(1, "project-one"),
@@ -288,46 +305,76 @@ export const site = siteSchema.parse({
       alt: "Illustration of Jhovanie Flores at a desk, laptop screen reading \"Successfully Deployed\"",
     },
     localTimeLabel: "local time",
-    stripLabel: "Tech stack",
     secondaryCta: "View projects",
-    biography: {
-      label: "Biography",
-      title: "About me",
-      stats: { years: "Years experience", projects: "Projects shipped", tools: "Tools in the stack" },
+    ticket: { status: "Status", time: "Local time", basedIn: "Based in" },
+    // TODO: draft copy, written from bio.long. Edit to taste.
+    intro: {
+      title: "From schema to deploy",
+      body: "Four years of building web products end to end: the data model, the API, the interface, and the pipeline that ships them.",
+      years: "building and shipping web products",
+      stack: { value: "Laravel + Next.js", note: "my main stack, on MySQL and PostgreSQL" },
     },
-    services: { label: "Services", title: "What I build" },
-    process: { label: "Process", title: "How I work" },
     work: {
-      label: "Featured work",
       title: "Selected work",
       allLabel: "All projects",
       caseStudy: "View case study",
-      liveSite: "Live site",
-      previous: "Previous project",
-      next: "Next project",
-      roleLabel: "Role",
-      yearLabel: "Year",
       max: 4,
     },
-    experience: { label: "Résumé", title: "Where I've worked", present: "Present" },
+    services: {
+      title: "What I build",
+      body: "Four stops on one line. Hire me for one, or ride it end to end.",
+    },
+    process: {
+      title: "How a project runs",
+      body: "No mystery between the first call and launch. You see the plan in writing and the work on a live URL every week.",
+      result: { value: "A deployed, documented product", note: "You get" },
+    },
+    // TODO: draft copy. The two paths from PRODUCT.md: hiring and projects.
+    letter: {
+      title: "Hi, I'm Jhovanie",
+      paragraphs: [
+        "I'm a senior software engineer with 4 years of experience building web products end to end with Laravel, React, and Next.js, backed by MySQL/PostgreSQL and shipped on Docker, Cloudflare, DigitalOcean, and Vercel.",
+        "I use Claude as part of my daily workflow to move faster without cutting corners.",
+        "If you're hiring, my roles and stack are on the About page. If you have a project, tell me what you're building and I'll tell you how I'd ship it.",
+      ],
+    },
     contact: {
-      label: "Contact",
-      title: "Have a project in mind? Let's get to work.",
+      title: "Have a project in mind?",
       body: "Tell me what you're building. I'll tell you how I'd ship it.",
+      image: {
+        src: "/images/station-platform.jpg",
+        alt: "A subway platform in black and white, seen across the tracks between steel columns",
+      },
       recruiters: { label: "Hiring? See my experience", href: "/about" },
     },
   },
-  footer: {
-    contactTitle: "Contact",
-    builtWith: "Built with Next.js & Tailwind CSS, deployed on Vercel.",
+  about: {
+    title: "About Jhovanie",
+    intro: "Senior software engineer. I build and ship full-stack products, from the database to the deploy.",
+    experienceTitle: "Where I've worked",
+    skillsTitle: "What I work with",
+    cv: "Download my CV",
+    present: "Present",
   },
+  contactPage: {
+    title: "Let's build something",
+    intro: "Book a short intro call, or email me. Tell me what you're building and I'll tell you how I'd ship it.",
+    elsewhere: "Elsewhere",
+  },
+  footer: {
+    title: "Thanks for reading",
+    message: "If something here fits what you need, I'd like to hear about it.",
+    build: "This build",
+  },
+  credits: [
+    { label: "Platform photograph by Matthew Wiebe (Unsplash)", href: "https://unsplash.com/photos/azkWKhyr54U" },
+  ],
   projectsPage: {
     title: "Projects",
     intro: "Products I've built and shipped end to end: the problem, my role, the stack, and what changed.",
     count: "projects",
     labels: { role: "Role", year: "Year", stack: "Stack" },
     view: "View case study",
-    cta: { lead: "Have a project in mind?", title: "Let's work together" },
     empty: {
       title: "No projects on the line yet",
       body: "Case studies are on their way. In the meantime, tell me about yours.",
