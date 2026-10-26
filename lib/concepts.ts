@@ -3,6 +3,12 @@ import { site } from "@/content/site"
 /** The design concepts under review at /concepts. One world each; the nav switches between them. */
 export const concepts = [
   {
+    slug: "desk",
+    name: "3D desk",
+    thesis: "Prototype for the full-time search: your desk as a small 3D room. Drag to look around; scrolling flies the camera to the monitor (projects), the shelf (skills), the wall board (experience) and a note on the desk (contact).",
+    risk: "The heaviest page; it has to stay smooth on mid-range phones.",
+  },
+  {
     slug: "cracktro",
     name: "Cracktro",
     thesis: "A demoscene title screen: three layers of drifting stars, your name in bitmap type, your intro riding a sine-wave scroller. Arrows change speed, space pauses.",

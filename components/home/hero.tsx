@@ -1,36 +1,35 @@
 import Link from "next/link"
 
+import { Assembly, type Part } from "@/components/assembly/assembly"
 import { BookCall } from "@/components/layout/book-call"
-import { LoadIn } from "@/components/motion/load-in"
 import { RiseText } from "@/components/motion/rise-text"
-import { Trace } from "@/components/trace/trace"
 import { site } from "@/content/site"
 import { navTransition } from "@/lib/navigation"
 
-/**
- * The quiet instrument's first screen: one edge, the name at display size,
- * one sentence, one action, and the live demonstration right under it.
- */
+// The stack, base to top: the order a request climbs out of the database.
+const order = ["data", "api", "interface", "edge"] as const
+const parts: Part[] = order.map((layer) => {
+  const g = site.skills.find((s) => s.layer === layer)!
+  return { id: layer, title: g.group, caption: g.items.join(" · "), detail: `${g.items.join(", ")}. ${g.note ?? ""}` }
+})
+
+/** The first screen: the stack as an exploded assembly, held while it comes apart. */
 export function Hero() {
   return (
-    <section aria-labelledby="hero-title" className="frame pt-[14svh] lg:pt-[20svh]">
-      <LoadIn className="lg:pl-[16%]">
-        <RiseText as="h1" id="hero-title" text={site.name} by="chars" onLoad className="display text-balance" />
-        <p data-load className="mt-6 max-w-[36ch] text-lead">
-          {site.role}. {site.bio.short}
+    <div className="frame pt-6 lg:pt-0">
+      <Assembly parts={parts} label={site.assembly.stack} hold>
+        <RiseText as="h1" text={site.name} by="chars" onLoad className="display" />
+        <p className="mt-5 max-w-[34ch] text-lead">
+          {site.role}. {site.home.intro}
         </p>
-        <div data-load className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-          <BookCall />
-          <Link href="/projects" transitionTypes={navTransition("/", "/projects")} className="link font-medium">
+        <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <BookCall className="h-12 px-6 text-body" />
+          <Link href="/projects" transitionTypes={navTransition("/", "/projects")} className="link font-semibold">
             {site.cta.work} →
           </Link>
         </div>
-
-        <div data-load className="column mt-14 lg:mt-20">
-          <Trace />
-          <p className="mt-3 text-small text-muted-foreground">{site.trace.hint}</p>
-        </div>
-      </LoadIn>
-    </section>
+        <p className="mt-8 text-small text-muted-foreground">{site.assembly.hint}</p>
+      </Assembly>
+    </div>
   )
 }

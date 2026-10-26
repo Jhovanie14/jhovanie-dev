@@ -5,10 +5,7 @@ import { Reveal } from "@/components/motion/reveal"
 import { site } from "@/content/site"
 import { navTransition } from "@/lib/navigation"
 
-/**
- * Side facts and a wide paragraph: who, where and since when on the left,
- * the story in my words across the rest, the portrait held to a small plate.
- */
+/** Who builds it: the portrait on a plate, the facts, the story in my words. */
 export function AboutBrief() {
   const { facts } = site.about
   const items = [
@@ -19,28 +16,26 @@ export function AboutBrief() {
 
   return (
     <section aria-labelledby="about-title" className="frame pt-32 lg:pt-44">
-      <h2 id="about-title" className="sr-only">
-        {site.about.title}
-      </h2>
-      <Reveal className="grid gap-10 lg:grid-cols-[16%_minmax(0,1fr)] lg:gap-0">
-        <dl className="grid grid-cols-3 gap-4 text-small lg:flex lg:flex-col lg:gap-5 lg:pr-6">
-          {items.map(({ label, value }) => (
-            <div key={label}>
-              <dt className="text-muted-foreground">{label}</dt>
-              <dd>{value}</dd>
-            </div>
-          ))}
-        </dl>
-        <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_12rem] md:gap-12 lg:max-w-[60rem]">
-          <div>
-            <p className="text-lead">{site.bio.long}</p>
-            <Link href="/about" transitionTypes={navTransition("/", "/about")} className="link mt-6 inline-block font-medium">
-              {site.home.about.more} →
-            </Link>
-          </div>
-          <div className="relative aspect-square w-40 overflow-hidden rounded-lg bg-surface md:w-full">
-            <Image src={site.avatar.src} alt={site.avatar.alt} fill sizes="12rem" className="object-cover" />
-          </div>
+      <Reveal className="grid gap-10 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:gap-16">
+        <div className="relative aspect-square w-full max-w-xs overflow-hidden bg-plate-3">
+          <Image src={site.avatar.src} alt={site.avatar.alt} fill sizes="20rem" className="object-cover" />
+        </div>
+        <div>
+          <h2 id="about-title" className="text-heading font-semibold">
+            Who builds it
+          </h2>
+          <p className="mt-5 max-w-[60ch] text-lead">{site.bio.long}</p>
+          <dl className="mt-8 grid max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
+            {items.map(({ label, value }) => (
+              <div key={label} className="bg-card px-4 py-3">
+                <dt className="text-small text-muted-foreground">{label}</dt>
+                <dd className="font-semibold">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <Link href="/about" transitionTypes={navTransition("/", "/about")} className="link mt-6 inline-block font-semibold">
+            {site.home.about.more} →
+          </Link>
         </div>
       </Reveal>
     </section>

@@ -2,28 +2,37 @@ import { Reveal } from "@/components/motion/reveal"
 import { RiseText } from "@/components/motion/rise-text"
 import { site } from "@/content/site"
 
-/** What you can hire me for: two-ended rows in the column, the service left, its stack right. */
+/** What you can hire me for, as a bill of materials: the part, its spec, what it is made of. */
 export function Services() {
   if (site.services.length === 0) return null
 
   return (
     <section aria-labelledby="services-title" className="frame pt-32 lg:pt-44">
-      <div className="lg:pl-[16%]">
-        <RiseText id="services-title" text={site.home.services.title} className="text-heading font-medium" />
-        <Reveal className="column mt-8 flex flex-col gap-6">
-          {site.services.map((service) => (
-            <div key={service.title} className="grid gap-1 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-8">
-              <div>
-                <h3 className="font-medium">{service.title}</h3>
-                <p className="text-muted-foreground">{service.description}</p>
-              </div>
-              <p className="text-small text-muted-foreground sm:max-w-[14rem] sm:pt-1 sm:text-right">
-                {service.stack.join(", ")}
-              </p>
-            </div>
-          ))}
-        </Reveal>
-      </div>
+      <RiseText id="services-title" text={site.home.services.title} className="text-heading font-semibold" />
+      <Reveal className="mt-8" each={0}>
+        <table className="w-full text-left">
+          <caption className="sr-only">{site.home.services.title}</caption>
+          <thead>
+            <tr className="border-b-2 border-foreground text-small text-muted-foreground">
+              <th scope="col" className="pb-2 font-semibold">Part</th>
+              <th scope="col" className="hidden pb-2 font-semibold sm:table-cell">Spec</th>
+              <th scope="col" className="pb-2 text-right font-semibold">Made of</th>
+            </tr>
+          </thead>
+          <tbody>
+            {site.services.map((s) => (
+              <tr key={s.title} className="border-b border-border align-top">
+                <th scope="row" className="py-4 pr-6">
+                  <span className="text-lead font-semibold">{s.title}</span>
+                  <span className="mt-1 block font-normal text-muted-foreground sm:hidden">{s.description}</span>
+                </th>
+                <td className="hidden py-4 pr-6 sm:table-cell">{s.description}</td>
+                <td className="py-4 text-right text-small text-muted-foreground">{s.stack.join(", ")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Reveal>
     </section>
   )
 }

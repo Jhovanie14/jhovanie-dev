@@ -1,19 +1,29 @@
 import type { Metadata } from "next"
 import Image from "next/image"
 
+import { Assembly, type Part } from "@/components/assembly/assembly"
 import { Contact } from "@/components/home/contact"
 import { PageTransition } from "@/components/layout/page-transition"
 import { Reveal } from "@/components/motion/reveal"
 import { RiseText } from "@/components/motion/rise-text"
-import { site, type Experience } from "@/content/site"
+import { site } from "@/content/site"
 import { isLinkAvailable } from "@/lib/assets"
 
-const { title, facts, record, process, cv, present } = site.about
+const { title, facts, record, cv, present } = site.about
 
 export const metadata: Metadata = { title, description: site.bio.short }
 
-const year = (value: string) => value.slice(0, 4)
-const span = ({ start, end }: Experience) => `${year(start)}–${end === "present" ? present : year(end)}`
+const year = (v: string) => v.slice(0, 4)
+
+// The career as an assembly: the first role at the base, the current one on top.
+const career: Part[] = [...site.experience]
+  .sort((a, b) => a.start.localeCompare(b.start))
+  .map((e) => ({
+    id: `${e.title}-${e.start}`,
+    title: e.title,
+    caption: `${year(e.start)}–${e.end === "present" ? present : year(e.end)}`,
+    detail: `${e.company}. ${e.highlights.join(" ")} Stack: ${e.stack.join(", ")}.`,
+  }))
 
 export default function AboutPage() {
   const cvAvailable = site.cvUrl && isLinkAvailable(site.cvUrl)
@@ -25,104 +35,56 @@ export default function AboutPage() {
 
   return (
     <PageTransition>
-      <header className="frame pt-[12svh] lg:pt-[16svh]">
-        <div className="lg:pl-[16%]">
+      <header className="frame grid gap-10 pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-end lg:gap-16 lg:pt-24">
+        <div>
           <RiseText as="h1" text={title} by="chars" onLoad className="display" />
-          <p className="column mt-6 text-lead">
-            {site.role}. {site.bio.short}
-          </p>
-        </div>
-      </header>
-
-      {/* Side facts, wide paragraph, the illustration beside it. */}
-      <section aria-label={title} className="frame pt-24 lg:pt-32">
-        <Reveal className="grid gap-10 lg:grid-cols-[16%_minmax(0,40rem)_minmax(0,1fr)] lg:gap-0">
-          <dl className="grid grid-cols-3 gap-4 text-small lg:flex lg:flex-col lg:gap-5 lg:pr-6">
+          <p className="mt-5 max-w-[60ch] text-lead">{site.bio.long}</p>
+          <dl className="mt-8 grid max-w-2xl gap-4 sm:grid-cols-3">
             {sideFacts.map(({ label, value }) => (
-              <div key={label}>
-                <dt className="text-muted-foreground">{label}</dt>
-                <dd>{value}</dd>
+              <div key={label} className="bg-card px-4 py-3">
+                <dt className="text-small text-muted-foreground">{label}</dt>
+                <dd className="font-semibold">{value}</dd>
               </div>
             ))}
           </dl>
-          <div>
-            <p className="text-lead">{site.bio.long}</p>
-            {cvAvailable && (
-              <a href={site.cvUrl} className="link mt-6 inline-block font-medium">
-                {cv} ↓
-              </a>
-            )}
-          </div>
-          <div className="relative aspect-[4/5] w-full max-w-sm overflow-hidden rounded-lg bg-surface lg:ml-12">
-            <Image
-              src={site.illustration.src}
-              alt={site.illustration.alt}
-              fill
-              priority
-              sizes="(min-width: 1024px) 24rem, 100vw"
-              className="object-cover object-[60%_40%]"
-            />
-          </div>
-        </Reveal>
-      </section>
-
-      {/* The record: roles on the left list, stack by layer on the right. */}
-      <section aria-labelledby="record-title" className="frame pt-32 lg:pt-44">
-        <div className="lg:pl-[16%]">
-          <RiseText id="record-title" text={record.roles} className="text-heading font-medium" />
-          <Reveal className="column mt-8 flex flex-col gap-8">
-            {site.experience.map((role) => (
-              <article key={`${role.company}-${role.start}`}>
-                <div className="flex items-baseline justify-between gap-6">
-                  <h3 className="font-medium">{role.title}</h3>
-                  <p className="text-small text-muted-foreground tabular-nums">{span(role)}</p>
-                </div>
-                <p className="text-muted-foreground">{role.company}</p>
-                <ul className="mt-2 flex flex-col gap-1">
-                  {role.highlights.map((highlight) => (
-                    <li key={highlight}>{highlight}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </Reveal>
+          {cvAvailable && (
+            <a href={site.cvUrl} className="link mt-6 inline-block font-semibold">
+              {cv} ↓
+            </a>
+          )}
         </div>
-      </section>
+        <div className="relative aspect-[4/5] w-full overflow-hidden bg-plate-3">
+          <Image src={site.illustration.src} alt={site.illustration.alt} fill priority sizes="(min-width: 1024px) 24rem, 100vw" className="object-cover object-[60%_40%]" />
+        </div>
+      </header>
+
+      <div className="frame pt-32 lg:pt-44">
+        <Assembly parts={career} label={site.assembly.career} details="always">
+          <h2 className="text-heading font-semibold">{record.roles}</h2>
+          <p className="mt-3 max-w-[40ch] text-muted-foreground">Each plate is a role, the first one at the base.</p>
+        </Assembly>
+      </div>
 
       <section aria-labelledby="stack-title" className="frame pt-32 lg:pt-44">
-        <div className="lg:pl-[16%]">
-          <RiseText id="stack-title" text={record.stack} className="text-heading font-medium" />
-          <Reveal className="column mt-8 flex flex-col gap-5">
-            {site.skills.map(({ group, items, note }) => (
-              <div key={group} className="grid gap-1 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-6">
-                <h3 className="text-muted-foreground">{group}</h3>
-                <div>
-                  <p className="font-medium">{items.join(", ")}</p>
-                  {note && <p className="text-small text-muted-foreground">{note}</p>}
-                </div>
-              </div>
-            ))}
-          </Reveal>
-        </div>
-      </section>
-
-      <section aria-labelledby="process-title" className="frame pt-32 lg:pt-44">
-        <div className="lg:pl-[16%]">
-          <RiseText id="process-title" text={process} className="text-heading font-medium" />
-          <Reveal className="column mt-8">
-            <ol className="flex flex-col gap-5">
-              {site.process.map((step) => (
-                <li key={step.title} className="grid gap-1 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-6">
-                  <div>
-                    <h3 className="font-medium">{step.title}</h3>
-                    <p className="text-muted-foreground">{step.description}</p>
-                  </div>
-                  <p className="text-small text-muted-foreground sm:pt-1">{step.when}</p>
-                </li>
+        <RiseText id="stack-title" text={record.stack} className="text-heading font-semibold" />
+        <Reveal className="mt-8" each={0}>
+          <table className="w-full text-left">
+            <caption className="sr-only">{record.stack}</caption>
+            <tbody>
+              {site.skills.map((g) => (
+                <tr key={g.group} className="border-b border-border align-top">
+                  <th scope="row" className="w-40 py-4 pr-6 font-semibold sm:w-56">
+                    {g.group}
+                  </th>
+                  <td className="py-4">
+                    <span className="text-lead font-semibold">{g.items.join(", ")}</span>
+                    {g.note && <span className="mt-1 block text-muted-foreground">{g.note}</span>}
+                  </td>
+                </tr>
               ))}
-            </ol>
-          </Reveal>
-        </div>
+            </tbody>
+          </table>
+        </Reveal>
       </section>
 
       <Contact />

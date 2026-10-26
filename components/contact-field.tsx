@@ -30,7 +30,7 @@ export function ContactField() {
   }
 
   return (
-    <div className="flex h-16 items-center justify-between gap-3 rounded-xl bg-popover pr-2 pl-5">
+    <div className="flex h-16 items-center justify-between gap-3 rounded-[var(--radius)] bg-popover pr-2 pl-5">
       <a href={`mailto:${site.email}`} className="link min-w-0 truncate text-lead">
         {site.email}
       </a>

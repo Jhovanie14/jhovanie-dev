@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { JetBrains_Mono, Jost } from "next/font/google"
+import { Familjen_Grotesk } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -7,10 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { site } from "@/content/site"
 import { cn } from "@/lib/utils"
 
-const jost = Jost({ subsets: ["latin"], variable: "--font-jost" })
-
-// The trace instrument's own face (an interface fragment), never page text.
-const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" })
+const familjen = Familjen_Grotesk({ subsets: ["latin"], variable: "--font-familjen" })
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -31,7 +28,7 @@ export default function RootLayout({
       lang="en"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={cn("antialiased", jost.variable, jetbrains.variable, "font-sans")}
+      className={cn("antialiased", familjen.variable, "font-sans")}
     >
       <head>
         {/* Motion gates key off html.js, so without JavaScript nothing waits to be revealed (DESIGN.md §5). */}

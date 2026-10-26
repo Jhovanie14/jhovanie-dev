@@ -9,7 +9,7 @@ export function BookCall({ className }: { className?: string }) {
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "press inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-primary px-5 text-small font-medium text-primary-foreground hover:bg-primary-hover",
+        "press inline-flex h-11 shrink-0 items-center justify-center rounded-[var(--radius)] bg-primary px-5 text-small font-semibold text-primary-foreground hover:bg-primary-hover",
         className
       )}
     >

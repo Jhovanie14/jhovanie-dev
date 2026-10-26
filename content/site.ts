@@ -97,18 +97,17 @@ export const siteSchema = z.object({
   projects: z.array(projectSchema).max(6),
   experience: z.array(experienceSchema),
   skills: z.array(skillGroupSchema),
-  trace: z.object({
-    method: z.string(),
-    path: z.string().startsWith("/api/"),
-    send: z.string(),
-    resend: z.string(),
-    sending: z.string(),
+  assembly: z.object({
+    stack: z.string(),
     hint: z.string(),
-    measured: z.string(),
+    project: z.object({ problem: z.string(), solution: z.string(), stack: z.string(), outcome: z.string() }),
+    career: z.string(),
+    process: z.string(),
   }),
   home: z.object({
+    intro: z.string(),
     work: z.object({ title: z.string(), all: z.string() }),
-    services: z.object({ title: z.string() }),
+    services: z.object({ title: z.string(), parts: z.string() }),
     about: z.object({ more: z.string() }),
   }),
   contact: z.object({
@@ -283,18 +282,17 @@ export const site = siteSchema.parse({
     },
     { group: "AI", items: ["Claude"], note: "Claude in the daily workflow, and AI features where they help." },
   ],
-  trace: {
-    method: "GET",
-    path: "/api/jhovanie",
-    send: "Send request",
-    resend: "Send again",
-    sending: "Sending",
-    hint: "Each layer is part of the stack I build. Open one to see what I do there.",
-    measured: "measured in your browser",
+  assembly: {
+    stack: "The stack",
+    hint: "Scroll to pull it apart. Pick a part to read it.",
+    project: { problem: "Problem", solution: "Solution", stack: "Stack", outcome: "Outcome" },
+    career: "Career",
+    process: "Your project",
   },
   home: {
+    intro: "An exploded view of what I ship, from the data model to the deploy.",
     work: { title: "Selected work", all: "All work" },
-    services: { title: "What you can hire me for" },
+    services: { title: "What you can hire me for", parts: "parts" },
     about: { more: "More about me" },
   },
   contact: {

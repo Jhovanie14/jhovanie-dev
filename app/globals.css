@@ -5,10 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-jost);
-    --font-sans: var(--font-jost);
-    --font-mono: var(--font-jetbrains); /* taste-skill-ignore: the trace instrument and code only */
+    --font-heading: var(--font-familjen);
+    --font-sans: var(--font-familjen);
     --color-accent-ink: var(--accent-ink);
+    --color-plate-1: var(--plate-1);
+    --color-plate-2: var(--plate-2);
+    --color-plate-3: var(--plate-3);
+    --color-plate-4: var(--plate-4);
     --color-primary-hover: var(--primary-hover);
     --color-surface: var(--surface);
     --color-ring: var(--ring);
@@ -43,10 +46,10 @@
     --ease-travel: cubic-bezier(0.76, 0, 0.24, 1);
     --ease-exit: cubic-bezier(0.55, 0.055, 0.675, 0.19);
 
-    /* Five type steps, Jost (DESIGN.md §3). Nothing else is set on page content. */
-    --text-display: clamp(2.75rem, 6vw, 6rem);
-    --text-display--line-height: 0.9;
-    --text-display--letter-spacing: -0.03em;
+    /* Five type steps, Familjen Grotesk (DESIGN.md §3). Nothing else is set on page content. */
+    --text-display: clamp(3rem, 6.4vw, 6rem);
+    --text-display--line-height: 0.92;
+    --text-display--letter-spacing: -0.035em;
     --text-heading: clamp(1.75rem, 1.3rem + 1.6vw, 2.5rem);
     --text-heading--line-height: 1.1;
     --text-heading--letter-spacing: -0.015em;
@@ -59,32 +62,43 @@
 }
 
 /*
- * Paper, ink, cobalt (DESIGN.md §2). One ground, one ink, one accent.
- * The accent goes on exactly one thing per screen: the primary action or the live state.
+ * Exploded (DESIGN.md §2): concrete ground, ink, four flat plate tones, and
+ * safety orange only on the action and the picked part. Orange carries ink
+ * text (6.4:1); as text on concrete it darkens to --accent-ink (5:1).
  */
 :root {
-    --background: #f4f4f1;
-    --foreground: #111111;
-    --surface: #eaeae5;
-    --card: #eaeae5;
-    --card-foreground: #111111;
-    --popover: #fbfbf9;
-    --popover-foreground: #111111;
-    --primary: #1f4bff;
-    --primary-foreground: #ffffff;
-    --primary-hover: #1a3fd9;
-    --accent-ink: #1f4bff;
-    --secondary: #eaeae5;
-    --secondary-foreground: #111111;
-    --muted: #eaeae5;
-    --muted-foreground: #636363;
-    --accent: #e1e1db;
-    --accent-foreground: #111111;
-    --destructive: #c4321b;
-    --border: rgb(17 17 17 / 10%);
-    --input: rgb(17 17 17 / 14%);
-    --ring: #1f4bff;
-    --radius: 0.5rem;
+    --background: #d9dcdf;
+    --foreground: #15181b;
+    --surface: #cfd3d7;
+    --card: #e4e6e9;
+    --card-foreground: #15181b;
+    --popover: #f4f5f6;
+    --popover-foreground: #15181b;
+    --primary: #ff5f1f;
+    --primary-foreground: #15181b;
+    --primary-hover: #ff7a42;
+    --accent-ink: #b23a08;
+    --secondary: #cfd3d7;
+    --secondary-foreground: #15181b;
+    --muted: #cfd3d7;
+    --muted-foreground: #4a5056;
+    --accent: #c9cdd2;
+    --accent-foreground: #15181b;
+    --destructive: #b3261e;
+    --border: rgb(21 24 27 / 14%);
+    --input: rgb(21 24 27 / 18%);
+    --ring: #15181b;
+    --radius: 0.25rem;
+
+    /* Plate tones, base to top, and the ink each one carries. */
+    --plate-1: #2b2f33;
+    --plate-1-ink: #f4f5f6;
+    --plate-2: #9aa1a8;
+    --plate-2-ink: #15181b;
+    --plate-3: #c3c8cd;
+    --plate-3-ink: #15181b;
+    --plate-4: #f4f5f6;
+    --plate-4-ink: #15181b;
 
     /* Page transitions */
     --vt-exit: 150ms;
@@ -95,27 +109,36 @@
 
 .dark {
     color-scheme: dark;
-    --background: #0e0f11;
-    --foreground: #f4f4f1;
-    --surface: #18191c;
-    --card: #18191c;
-    --card-foreground: #f4f4f1;
-    --popover: #1d1e22;
-    --popover-foreground: #f4f4f1;
-    --primary: #1f4bff;
-    --primary-foreground: #ffffff;
-    --primary-hover: #3a62ff;
-    --accent-ink: #8299ff;
-    --secondary: #18191c;
-    --secondary-foreground: #f4f4f1;
-    --muted: #18191c;
-    --muted-foreground: #9a9ba1;
-    --accent: #232428;
-    --accent-foreground: #f4f4f1;
+    --background: #15181b;
+    --foreground: #e8eaec;
+    --surface: #1e2226;
+    --card: #1e2226;
+    --card-foreground: #e8eaec;
+    --popover: #24282d;
+    --popover-foreground: #e8eaec;
+    --primary: #ff5f1f;
+    --primary-foreground: #15181b;
+    --primary-hover: #ff7a42;
+    --accent-ink: #ff8a5c;
+    --secondary: #1e2226;
+    --secondary-foreground: #e8eaec;
+    --muted: #1e2226;
+    --muted-foreground: #a3a9af;
+    --accent: #262b30;
+    --accent-foreground: #e8eaec;
     --destructive: #ff7a63;
-    --border: rgb(244 244 241 / 9%);
-    --input: rgb(244 244 241 / 14%);
-    --ring: #8299ff;
+    --border: rgb(232 234 236 / 12%);
+    --input: rgb(232 234 236 / 16%);
+    --ring: #e8eaec;
+
+    --plate-1: #3a3f45;
+    --plate-1-ink: #e8eaec;
+    --plate-2: #5c636a;
+    --plate-2-ink: #f4f5f6;
+    --plate-3: #8a9198;
+    --plate-3-ink: #15181b;
+    --plate-4: #e8eaec;
+    --plate-4-ink: #15181b;
 }
 
 /* The page frame: one pair of equal outer margins at every width. */
@@ -126,19 +149,18 @@
   padding-inline: clamp(1.25rem, 4vw, 3rem);
 }
 
-/* The text column every section hangs from (the quiet instrument's one edge). */
+/* A readable text measure. */
 @utility column {
   width: 100%;
   max-width: 40rem;
 }
 
-/* Display type: the name. Jost bold capitals. */
+/* Display type: the name, page titles. Familjen bold, tight. */
 @utility display {
   font-size: var(--text-display);
   line-height: var(--text-display--line-height);
   letter-spacing: var(--text-display--letter-spacing);
   font-weight: 700;
-  text-transform: uppercase;
 }
 
 /* Press feedback for every button-like control. */
