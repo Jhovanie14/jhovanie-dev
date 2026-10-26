@@ -26,11 +26,3 @@ export function featuredProjects(max: number) {
   const featured = site.projects.filter((p) => p.featured)
   return (featured.length > 0 ? featured : site.projects).slice(0, max)
 }
-
-/**
- * Bento rhythm for project grids: wide, half, half, wide, …
- * A half card left alone on the last row goes wide instead of leaving a hole.
- */
-export function isWideCard(index: number, total: number) {
-  return index % 3 === 0 || (index === total - 1 && index % 3 === 1)
-}

@@ -15,11 +15,14 @@ export function ProjectCover({
   project,
   sizes,
   priority,
+  fine,
   className,
 }: {
   project: Project
   sizes: string
   priority?: boolean
+  /** Thin-line route art for large covers. */
+  fine?: boolean
   className?: string
 }) {
   const frame = cn("relative aspect-[16/10] overflow-hidden", className)
@@ -46,7 +49,7 @@ export function ProjectCover({
       style={{ background: "color-mix(in oklch, var(--line) 7%, var(--card))" }}
     >
       <div className="absolute inset-0 transition-transform duration-700 ease-glide group-hover:scale-[1.04]">
-        <RouteArt seed={project.slug} />
+        <RouteArt seed={project.slug} fine={fine} />
       </div>
       <span className="absolute top-3 left-3 rounded-md border bg-card/80 px-2 py-0.5 font-mono text-xs text-muted-foreground tabular-nums">
         {projectCode(project)}

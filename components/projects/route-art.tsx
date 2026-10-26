@@ -7,10 +7,16 @@ import { routeArt } from "@/lib/route-art"
  * A train runs the line while an ancestor `.group` is hovered or
  * `[data-active]` is set (see .route-train in globals.css).
  */
-export function RouteArt({ seed }: { seed: string }) {
+export function RouteArt({ seed, fine = false }: { seed: string; fine?: boolean }) {
   const id = useId()
   const { main, stations, others } = routeArt(seed)
   const last = stations.length - 1
+
+  // `fine`: for large covers. Hairline strokes that stay thin at any size, smaller stations.
+  const w = fine
+    ? { main: 2.5, other: 1, station: 1.5, r: 2.4, end: 3.6, hole: 1.4, dot: 0.6 }
+    : { main: 4.5, other: 3, station: 2.5, r: 4.5, end: 7.5, hole: 3, dot: 0.9 }
+  const scaling = fine ? ("non-scaling-stroke" as const) : undefined
 
   return (
     <svg
@@ -21,7 +27,7 @@ export function RouteArt({ seed }: { seed: string }) {
     >
       <defs>
         <pattern id={id} width="16" height="16" patternUnits="userSpaceOnUse">
-          <circle cx="1" cy="1" r="0.9" fill="var(--foreground)" opacity="0.1" />
+          <circle cx="1" cy="1" r={w.dot} fill="var(--foreground)" opacity="0.1" />
         </pattern>
       </defs>
       <rect width="320" height="200" fill={`url(#${id})`} />
@@ -33,7 +39,8 @@ export function RouteArt({ seed }: { seed: string }) {
           fill="none"
           stroke="var(--muted-foreground)"
           strokeOpacity="0.22"
-          strokeWidth="3"
+          strokeWidth={w.other}
+          vectorEffect={scaling}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -43,7 +50,8 @@ export function RouteArt({ seed }: { seed: string }) {
         d={main}
         fill="none"
         stroke="var(--line)"
-        strokeWidth="4.5"
+        strokeWidth={w.main}
+        vectorEffect={scaling}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -53,7 +61,8 @@ export function RouteArt({ seed }: { seed: string }) {
         className="route-train"
         fill="none"
         stroke="var(--foreground)"
-        strokeWidth="4.5"
+        strokeWidth={w.main}
+        vectorEffect={scaling}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -61,11 +70,20 @@ export function RouteArt({ seed }: { seed: string }) {
       {stations.map(([x, y], i) =>
         i === 0 || i === last ? (
           <g key={i}>
-            <circle cx={x} cy={y} r="7.5" fill="var(--line)" />
-            <circle cx={x} cy={y} r="3" fill="var(--card)" />
+            <circle cx={x} cy={y} r={w.end} fill="var(--line)" />
+            <circle cx={x} cy={y} r={w.hole} fill="var(--card)" />
           </g>
         ) : (
-          <circle key={i} cx={x} cy={y} r="4.5" fill="var(--card)" stroke="var(--line)" strokeWidth="2.5" />
+          <circle
+            key={i}
+            cx={x}
+            cy={y}
+            r={w.r}
+            fill="var(--card)"
+            stroke="var(--line)"
+            strokeWidth={w.station}
+            vectorEffect={scaling}
+          />
         )
       )}
     </svg>
