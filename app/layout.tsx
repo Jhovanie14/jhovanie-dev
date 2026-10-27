@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Familjen_Grotesk } from "next/font/google"
+import { Onest, Unbounded } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -7,7 +7,9 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { site } from "@/content/site"
 import { cn } from "@/lib/utils"
 
-const familjen = Familjen_Grotesk({ subsets: ["latin"], variable: "--font-familjen" })
+// Unbounded for display (and the lettering drawn into the 3D room), Onest for reading.
+const unbounded = Unbounded({ subsets: ["latin"], variable: "--font-unbounded" })
+const onest = Onest({ subsets: ["latin"], variable: "--font-onest" })
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -28,14 +30,14 @@ export default function RootLayout({
       lang="en"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={cn("antialiased", familjen.variable, "font-sans")}
+      className={cn("antialiased", unbounded.variable, onest.variable, "font-sans")}
     >
       <head>
         {/* Motion gates key off html.js, so without JavaScript nothing waits to be revealed (DESIGN.md §5). */}
         <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
       </head>
       <body>
-        <ThemeProvider defaultTheme="light">
+        <ThemeProvider defaultTheme="dark" forcedTheme="dark">
           <TooltipProvider delay={300}>
             {children}
           </TooltipProvider>

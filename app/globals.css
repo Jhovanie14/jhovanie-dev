@@ -5,13 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-familjen);
-    --font-sans: var(--font-familjen);
+    --font-heading: var(--font-unbounded);
+    --font-sans: var(--font-onest);
     --color-accent-ink: var(--accent-ink);
-    --color-plate-1: var(--plate-1);
-    --color-plate-2: var(--plate-2);
-    --color-plate-3: var(--plate-3);
-    --color-plate-4: var(--plate-4);
     --color-primary-hover: var(--primary-hover);
     --color-surface: var(--surface);
     --color-ring: var(--ring);
@@ -62,83 +58,41 @@
 }
 
 /*
- * Exploded (DESIGN.md §2): concrete ground, ink, four flat plate tones, and
- * safety orange only on the action and the picked part. Orange carries ink
- * text (6.4:1); as text on concrete it darkens to --accent-ink (5:1).
+ * The desk at night (DESIGN.md §2): a dark room, warm white text, and the
+ * orange of the shirt in the portrait for the one action and the live state.
+ * One theme: the room is always at night.
  */
-:root {
-    --background: #d9dcdf;
-    --foreground: #15181b;
-    --surface: #cfd3d7;
-    --card: #e4e6e9;
-    --card-foreground: #15181b;
-    --popover: #f4f5f6;
-    --popover-foreground: #15181b;
-    --primary: #ff5f1f;
-    --primary-foreground: #15181b;
-    --primary-hover: #ff7a42;
-    --accent-ink: #b23a08;
-    --secondary: #cfd3d7;
-    --secondary-foreground: #15181b;
-    --muted: #cfd3d7;
-    --muted-foreground: #4a5056;
-    --accent: #c9cdd2;
-    --accent-foreground: #15181b;
-    --destructive: #b3261e;
-    --border: rgb(21 24 27 / 14%);
-    --input: rgb(21 24 27 / 18%);
-    --ring: #15181b;
-    --radius: 0.25rem;
-
-    /* Plate tones, base to top, and the ink each one carries. */
-    --plate-1: #2b2f33;
-    --plate-1-ink: #f4f5f6;
-    --plate-2: #9aa1a8;
-    --plate-2-ink: #15181b;
-    --plate-3: #c3c8cd;
-    --plate-3-ink: #15181b;
-    --plate-4: #f4f5f6;
-    --plate-4-ink: #15181b;
+:root,
+.dark {
+    color-scheme: dark;
+    --background: #0d0d10;
+    --foreground: #f2ede6;
+    --surface: #151518;
+    --card: #151518;
+    --card-foreground: #f2ede6;
+    --popover: #1c1c20;
+    --popover-foreground: #f2ede6;
+    --primary: #ff7a1a;
+    --primary-foreground: #0d0d10;
+    --primary-hover: #ff9142;
+    --accent-ink: #ff9a52;
+    --secondary: #1c1c20;
+    --secondary-foreground: #f2ede6;
+    --muted: #1c1c20;
+    --muted-foreground: #a39d94;
+    --accent: #24242a;
+    --accent-foreground: #f2ede6;
+    --destructive: #ff6b5b;
+    --border: rgb(242 237 230 / 12%);
+    --input: rgb(242 237 230 / 16%);
+    --ring: #ff7a1a;
+    --radius: 0.75rem;
 
     /* Page transitions */
     --vt-exit: 150ms;
     --vt-enter: 240ms;
     --vt-move: 420ms;
     --vt-offset: 24px;
-}
-
-.dark {
-    color-scheme: dark;
-    --background: #15181b;
-    --foreground: #e8eaec;
-    --surface: #1e2226;
-    --card: #1e2226;
-    --card-foreground: #e8eaec;
-    --popover: #24282d;
-    --popover-foreground: #e8eaec;
-    --primary: #ff5f1f;
-    --primary-foreground: #15181b;
-    --primary-hover: #ff7a42;
-    --accent-ink: #ff8a5c;
-    --secondary: #1e2226;
-    --secondary-foreground: #e8eaec;
-    --muted: #1e2226;
-    --muted-foreground: #a3a9af;
-    --accent: #262b30;
-    --accent-foreground: #e8eaec;
-    --destructive: #ff7a63;
-    --border: rgb(232 234 236 / 12%);
-    --input: rgb(232 234 236 / 16%);
-    --ring: #e8eaec;
-
-    --plate-1: #3a3f45;
-    --plate-1-ink: #e8eaec;
-    --plate-2: #5c636a;
-    --plate-2-ink: #f4f5f6;
-    --plate-3: #8a9198;
-    --plate-3-ink: #15181b;
-    --plate-4: #e8eaec;
-    --plate-4-ink: #15181b;
 }
 
 /* The page frame: one pair of equal outer margins at every width. */
