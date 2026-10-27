@@ -10,6 +10,7 @@ import { gsap, ScrollTrigger } from "@/lib/gsap"
 import { cn } from "@/lib/utils"
 
 import { BOARD_TIME, boardHit, drawBoard, type BoardState } from "./board"
+import { createBookReader, skillUses } from "./book"
 import { buildRoom, type Stop } from "./room"
 import { ALL, drawScreen, folderItems, folders, PAGE, pageCount, screenHit, shotOnScreen, SLIDE_TIME, type ScreenState, type Shots } from "./screen"
 import { ShotViewer } from "./shot-viewer"
@@ -54,10 +55,17 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
   const [current, setCurrent] = useState<Stop>("intro")
   const [project, setProject] = useState<number | null>(null)
   // The 3D side reads and writes the open project through this bridge.
-  const bridge = useRef<{ open: (i: number | null, image: number, page: number, folder: string) => void; role: (i: number | null) => void }>({
+  const bridge = useRef<{
+    open: (i: number | null, image: number, page: number, folder: string) => void
+    role: (i: number | null) => void
+    skill: (tool: string | null) => void
+  }>({
     open: () => {},
     role: () => {},
+    skill: () => {},
   })
+  // The skill whose book is open off the shelf, shared with the panel.
+  const [skill, setSkill] = useState<string | null>(null)
   // The role open on the experience board, shared with the panel.
   const [role, setRole] = useState<number | null>(null)
   const [shot, setShot] = useState(0)
@@ -116,6 +124,14 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
     }
     // Opening a role draws the camera in towards the board (0..1, eased in the render loop).
     let zoom = 0
+    // The open book, once the room exists; and the camera's small step towards it.
+    let reader: ReturnType<typeof createBookReader> | null = null
+    let wantedSkill: string | null = null
+    let bookZoom = 0
+    bridge.current.skill = (tool) => {
+      wantedSkill = tool
+      reader?.show(tool)
+    }
     const now = () => performance.now() / 1000
     // Each project's screenshots, loaded once in the browser.
     const loaded: (Shots | undefined)[] = []
@@ -167,6 +183,9 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
       want.look.lerpVectors(la, lb, t)
       // At the board with a role open: step in, and centre on the role's card (to the right of the board, -z).
       const near = Math.max(0, 1 - Math.abs(s - STOPS.indexOf("experience"))) * zoom
+      // At the shelf with a book open: a small step in.
+      const atShelf = Math.max(0, 1 - Math.abs(s - STOPS.indexOf("skills"))) * bookZoom
+      if (atShelf > 0) want.pos.lerp(want.look, 0.12 * atShelf)
       if (near > 0) {
         want.pos.lerp(want.look, 0.14 * near)
         const towardCard = new THREE.Vector3(0, 0, -0.38 * near)
@@ -208,6 +227,9 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
     Promise.all([document.fonts.load(`800 60px ${fonts.display}`), document.fonts.load(`500 30px ${fonts.body}`)]).then(() => {
       if (disposed) return
       room = buildRoom(scene, { small, fonts })
+      reader = createBookReader(scene, room.books, fonts, { reduce, aspect: () => camera.aspect })
+      for (const mesh of reader.meshes) room.hotspots.push({ mesh, stop: "skills", label: "Close the book" })
+      reader.show(wantedSkill)
       paint()
       if (reduce) return
       // Lights up: the lamp catches, the room fills, the monitor boots, then shows the work.
@@ -295,6 +317,12 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
         room.bulbMat.color.set(on ? "#3A3A40" : "#FFD9A8")
         return
       }
+      // A book on the shelf opens; the open book (or its own book again) closes.
+      if (reader) {
+        const book = room.books.find((b) => b.mesh === hit.spot.mesh)
+        if (reader.meshes.includes(hit.spot.mesh)) setSkill(null)
+        else if (book) setSkill(book.tool === reader.open ? null : book.tool)
+      }
       // A role on the board opens it; the open one closes.
       if (hit.spot.mesh === room.board && hit.uv) {
         const i = boardHit(boardState, hit.uv, site.experience.length)
@@ -329,6 +357,7 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
       // An open case study with screenshots keeps playing on the screen (about 30 fps).
       if (!reduce && screenState.mode === "detail" && loaded[screenState.index]?.length && frame++ % 2 === 0) paint()
       zoom += ((boardState.selected === null ? 0 : 1) - zoom) * (reduce ? 1 : 0.08)
+      bookZoom += ((reader?.open ? 1 : 0) - bookZoom) * (reduce ? 1 : 0.06)
       if (!reduce && now() - boardState.since < BOARD_TIME + 0.05) paintBoard()
       // A page turn or a newly opened folder repaints every frame while it moves.
       if (screenState.mode === "list") {
@@ -350,6 +379,7 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
 
     return () => {
       disposed = true
+      reader?.dispose()
       trigger.kill()
       renderer.setAnimationLoop(null)
       window.removeEventListener("resize", layout)
@@ -379,6 +409,10 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
   useEffect(() => {
     bridge.current.role(role)
   }, [role])
+
+  useEffect(() => {
+    bridge.current.skill(skill)
+  }, [skill])
 
   // The panel's open role unfolds with the board.
   const roleDetail = useRef<HTMLDivElement>(null)
@@ -634,11 +668,33 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
             <h2 id="skills-title" className={heading}>
               On the shelf
             </h2>
+            <p className="mt-1 text-muted-foreground">Open a book here or on the shelf to see where I used it.</p>
             <dl className="mt-4 flex flex-col gap-3">
               {site.skills.map((g) => (
-                <div key={g.group} className="grid gap-1 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-4">
-                  <dt className="text-muted-foreground">{g.group}</dt>
-                  <dd className="font-semibold">{g.items.join(", ")}</dd>
+                <div key={g.group} className="grid gap-1.5 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-4">
+                  <dt className="pt-1.5 text-muted-foreground">{g.group}</dt>
+                  <dd className="flex flex-wrap gap-1.5">
+                    {g.items.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setSkill(skill === t ? null : t)}
+                        aria-pressed={skill === t}
+                        className={cn(
+                          "h-9 rounded-full px-3.5 text-[15px] font-semibold transition-colors duration-150",
+                          skill === t ? "bg-primary text-primary-foreground" : "bg-popover hover:bg-foreground/15"
+                        )}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </dd>
+                  {/* On phones the panel covers the shelf, so the open book's pages are repeated here. */}
+                  {skill && g.items.includes(skill) && (
+                    <div className="mt-2 rounded-lg bg-popover p-4 sm:col-span-2 lg:hidden">
+                      <SkillUses skill={skill} />
+                    </div>
+                  )}
                 </div>
               ))}
             </dl>
@@ -756,5 +812,35 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
         />
       )}
     </div>
+  )
+}
+
+/** Where a skill was used: the projects and roles whose stack includes it. */
+function SkillUses({ skill }: { skill: string }) {
+  const { projects, roles } = skillUses(skill)
+  if (!projects.length && !roles.length) return <p>Used every day for AI-assisted development, architecture review and code quality.</p>
+  return (
+    <dl className="flex flex-col gap-3 text-[15px]">
+      {projects.length > 0 && (
+        <div>
+          <dt className="text-[13px] font-semibold tracking-wide text-accent-ink uppercase">Projects</dt>
+          {projects.map((p) => (
+            <dd key={p.slug} className="mt-1">
+              <span className="font-semibold">{p.title}</span> <span className="text-muted-foreground">· {p.year}</span>
+            </dd>
+          ))}
+        </div>
+      )}
+      {roles.length > 0 && (
+        <div>
+          <dt className="text-[13px] font-semibold tracking-wide text-accent-ink uppercase">Roles</dt>
+          {roles.map((r) => (
+            <dd key={r.company + r.start} className="mt-1">
+              <span className="font-semibold">{r.company}</span> <span className="text-muted-foreground">· {r.title}</span>
+            </dd>
+          ))}
+        </div>
+      )}
+    </dl>
   )
 }

@@ -40,3 +40,9 @@ next-env.d.ts
 
 # taste-skill inspector screenshots and reports
 /.taste-skill/
+
+# local AI tooling and personal settings
+/.agents/
+/.aider-desk/
+/.claude/
+skills-lock.json

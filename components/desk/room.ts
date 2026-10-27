@@ -4,6 +4,7 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 import { site } from "@/content/site"
 
 import { BOARD, drawBoard } from "./board"
+import type { ShelfBook } from "./book"
 import { SCREEN } from "./screen"
 import { canvasTexture, wallTexture, woodTexture } from "./textures"
 
@@ -216,13 +217,16 @@ export function buildRoom(scene: THREE.Scene, opts: { small: boolean; fonts: Fon
   // Books come in a few widths; with a long list they all slim down to fit the 1.9 m of shelf.
   const widths = tools.map((_, i) => 0.075 + ((i * 13) % 4) * 0.012)
   const fit = Math.min(1, 1.9 / widths.reduce((sum, w) => sum + w + 0.006, 0))
+  const books: ShelfBook[] = []
   let x = -1.08
   tools.forEach((tool, i) => {
     const color = bookColors[i % bookColors.length]
     const h = 0.26 + ((i * 37) % 9) * 0.012
     const w = widths[i] * fit
+    // Each book is a group (body and spine) so it can come off the shelf.
+    const group = new THREE.Group()
+    group.position.set(x + w / 2, 1.8 + h / 2, -0.84)
     const book = rbox(w, h, 0.2, mat(color, { roughness: 0.8 }), 0.006)
-    book.position.set(x + w / 2, 1.8 + h / 2, -0.84)
     const spine = new THREE.Mesh(
       new THREE.PlaneGeometry(w * 0.86, h * 0.9),
       new THREE.MeshStandardMaterial({
@@ -240,9 +244,11 @@ export function buildRoom(scene: THREE.Scene, opts: { small: boolean; fonts: Fon
         }),
       })
     )
-    spine.position.set(x + w / 2, 1.8 + h / 2, -0.7395)
-    scene.add(book, spine)
-    hotspots.push({ mesh: book, stop: "skills", label: `Shelf: ${tool}` })
+    spine.position.z = 0.1005
+    group.add(book, spine)
+    scene.add(group)
+    books.push({ group, mesh: book, tool, color })
+    hotspots.push({ mesh: book, stop: "skills", label: `Book: ${tool}` })
     x += w + 0.006
   })
 
@@ -298,5 +304,5 @@ export function buildRoom(scene: THREE.Scene, opts: { small: boolean; fonts: Fon
   scene.add(note)
   hotspots.push({ mesh: note, stop: "contact", label: "Note: get in touch" })
 
-  return { hemi, lamp, screenLight, bulbMat, screenTex, screen, boardTex, board: boardFace, hotspots }
+  return { hemi, lamp, screenLight, bulbMat, screenTex, screen, boardTex, board: boardFace, books, hotspots }
 }

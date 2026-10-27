@@ -102,7 +102,7 @@ export const site = siteSchema.parse({
     alt: "Illustration of Jhovanie Flores at a desk, laptop screen reading \"Successfully Deployed\"",
   },
   email: "flores.jhovanie14@gmail.com",
-  cvUrl: "/cv.pdf", // TODO: add public/cv.pdf (the "Download CV" button appears once it exists)
+  cvUrl: "/cv.pdf",
   socials: [
     { label: "GitHub", href: "https://github.com/jhovanie14" },
     { label: "WhatsApp", href: "https://wa.me/639192903551" },
@@ -123,7 +123,7 @@ export const site = siteSchema.parse({
         "A three-role marketplace (student, trainer, admin). Every trainer is checked by a person against the GMC, NMC and GDC registers before going live. Reviews come only from real bookings. Postgres row-level security keeps each role to its own data, PostGIS powers the town or postcode search, and Stripe handles trainer subscriptions and commission. It's mobile-first, since 70–80% of students browse on a phone.",
       outcome:
         "Live at aesthetictraininghub.co.uk with 70+ pages shipped. I still run and maintain it.",
-      stack: ["Next.js 16", "Supabase", "Postgres + RLS", "Drizzle", "Stripe", "Resend", "PostGIS", "Playwright"],
+      stack: ["Next.js 16", "TypeScript", "Tailwind v4", "shadcn/ui", "Supabase", "Postgres + RLS", "Drizzle", "Stripe", "Resend", "PostGIS", "Playwright", "Vercel"],
       links: { live: "https://aesthetictraininghub.co.uk" },
       cover: {
         src: "/images/aesthetic-training-hub-showcase/ath-cover.png",
@@ -164,6 +164,7 @@ export const site = siteSchema.parse({
       stack: [
         "Next.js 16",
         "React 19",
+        "TypeScript",
         "Supabase (Postgres, Auth, RLS, Realtime, Storage)",
         "Telnyx (Voice API, WebRTC, SMS, AI Assistant)",
         "Chrome Extension MV3",
@@ -172,6 +173,7 @@ export const site = siteSchema.parse({
         "Tailwind v4",
         "shadcn/ui",
         "Vitest",
+        "Vercel",
       ],
       links: {},
       cover: {
@@ -202,7 +204,7 @@ export const site = siteSchema.parse({
       solution:
         "Checkout re-prices the cart on the server, checks coupons and enforces store hours, then charges the card through Square and creates the kitchen's pick-up ticket on the POS. When staff move the ticket, a signed Square webhook syncs the status back, and the customer's tracking page updates live over Reverb WebSockets, re-checking if a broadcast is missed. Every Square sale, from the website or the till, arrives as an idempotent Horizon job. Recipes turn \"12 wings, Garlic Drip\" into exact ingredient amounts, and a stock ledger records every movement, so the owner sees what was used, wasted and needs restocking from one dashboard.",
       outcome: "Live at bucketbaddie.com: 45 screens across the site and admin, covered by 357 automated tests.",
-      stack: ["Laravel 13", "PHP 8.5", "Vue 3", "Inertia v3 (SSR)", "Laravel Reverb", "Horizon", "Square API", "Tailwind v4", "Pest", "Docker", "DigitalOcean"],
+      stack: ["Laravel 13", "PHP 8.5", "Vue 3", "TypeScript", "Inertia v3 (SSR)", "Laravel Reverb", "Horizon", "Square API", "Tailwind v4", "shadcn-vue", "Pest", "Docker", "DigitalOcean"],
       links: { live: "https://bucketbaddie.com" },
       cover: {
         src: "/images/bucket-baddie-showcase/bb-cover.png",
@@ -216,6 +218,54 @@ export const site = siteSchema.parse({
         {
           src: "/images/bucket-baddie-showcase/bb-system.png",
           alt: "How one order keeps the website, the Square POS and the stock count in sync",
+        },
+      ],
+    },
+    {
+      slug: "ledion-autocare",
+      title: "Ledion AutoCare",
+      category: "Web apps",
+      summary: "A car-detailing shop's whole day in one app: online booking, a live queue, a POS, and books closed to the peso.",
+      year: 2026,
+      month: 6,
+      role: "Solo full-stack developer · freelance · now maintaining",
+      problem:
+        "A car-detailing shop running bookings, the work queue, billing and the day's cash on separate tools and paper, with prices that depend on each car's body type and home-service jobs priced by distance.",
+      solution:
+        "One Laravel app carries each booking from the customer's phone to the cash count, so nothing is re-typed. Customers book in six steps, choosing their body type first so every price is right; home-service addresses are found with Photon address search, pinned on a map, and the travel fee is worked out from the shop's distance before they confirm. Email and Semaphore SMS confirmations go out, with an SMS reminder 15 minutes before the slot. Staff work a live queue (pending, confirmed, done), set the plate, add services and take deposits on the car's card. The booking opens at the POS ready to settle in cash, GCash, card or cheque; products come off stock and the sale locks once billed. Every payment is its own record, cheques clear or bounce, expenses come off, and the day ends with the cash to remit. Scheduled check-up and win-back SMS bring customers back, and staff sign in with passkeys or two-factor authentication through Fortify.",
+      outcome: "Live at ledioncarcare.com and still maintained: 499 automated tests (Pest), static analysis with Larastan, deployed with Coolify on DigitalOcean.",
+      stack: [
+        "Laravel 13",
+        "PHP 8.4",
+        "Inertia v3",
+        "React 19",
+        "TypeScript",
+        "Tailwind v4",
+        "shadcn/ui",
+        "MySQL",
+        "Fortify (passkeys, 2FA)",
+        "Resend",
+        "Semaphore SMS",
+        "Photon address search",
+        "Pest 4",
+        "Larastan",
+        "Coolify",
+        "Nixpacks",
+        "DigitalOcean",
+      ],
+      links: { live: "https://ledioncarcare.com" },
+      cover: {
+        src: "/images/ledion-autocare-showcase/lc-cover.png",
+        alt: "Ledion AutoCare website on desktop and mobile, with the admin dashboard (demo data)",
+      },
+      gallery: [
+        {
+          src: "/images/ledion-autocare-showcase/lc-screens.png",
+          alt: "Booking by body type on mobile, the staff queue, and the point of sale",
+        },
+        {
+          src: "/images/ledion-autocare-showcase/lc-system.png",
+          alt: "How one booking moves through the shop, from booking to cash count",
         },
       ],
     },
@@ -260,7 +310,18 @@ export const site = siteSchema.parse({
         "Built and maintain Aesthetic Training Hub, a live UK marketplace for vetted aesthetics trainers, across 70+ pages.",
         "Three-role system with Row Level Security, register-checked trainers and reviews only from real bookings.",
       ],
-      stack: ["Next.js", "Supabase", "Stripe", "PostGIS", "Playwright"],
+      stack: ["Next.js", "TypeScript", "Tailwind CSS", "Supabase", "Stripe", "PostGIS", "Playwright", "Vercel"],
+    },
+    {
+      company: "Ledion AutoCare",
+      title: "Full-Stack Software Engineer (Freelance)",
+      start: "2026-06",
+      end: "present",
+      highlights: [
+        "Built and maintain the shop's whole day in one Laravel app: online booking by body type, a live staff queue, a POS and the daily cash count.",
+        "Home-service travel fees from a map, SMS confirmations and reminders, and passkey or 2FA sign-in; 499 automated tests (Pest).",
+      ],
+      stack: ["Laravel", "PHP", "Inertia", "React", "TypeScript", "MySQL", "Pest", "Coolify", "DigitalOcean"],
     },
     {
       company: "Hourglass Investment LLC",
@@ -272,7 +333,7 @@ export const site = siteSchema.parse({
         "Built Bucket Baddie's ordering platform on the full Square ecosystem, with live tracking and inventory (357 tests).",
         "Solo-built The Launchpad Wash: bookings, Stripe memberships and a store (67 pages, 51 API routes).",
       ],
-      stack: ["Next.js", "Supabase", "Telnyx", "Laravel", "Vue", "Square", "Stripe"],
+      stack: ["Next.js", "Laravel", "Vue", "TypeScript", "Tailwind CSS", "Supabase", "Telnyx", "Square", "Stripe", "Vercel", "DigitalOcean"],
     },
     {
       company: "Aero IDX",
@@ -301,12 +362,12 @@ export const site = siteSchema.parse({
   ],
   // One book on the shelf per item.
   skills: [
-    { group: "Frontend", items: ["React", "Next.js", "Vue", "TypeScript", "Tailwind CSS"] },
+    { group: "Frontend", items: ["React", "Next.js", "Vue", "TypeScript", "Tailwind CSS", "shadcn/ui"] },
     { group: "Backend", items: ["Laravel", "PHP", "Inertia", "Reverb", "Horizon"] },
     { group: "Data", items: ["PostgreSQL", "Supabase", "MySQL"] },
-    { group: "Integrations", items: ["Stripe", "Square", "Telnyx", "WebRTC"] },
+    { group: "Integrations", items: ["Stripe", "Square", "Telnyx", "WebRTC", "Resend"] },
     { group: "Testing", items: ["Pest", "Vitest", "Playwright"] },
-    { group: "Infra", items: ["Docker", "Vercel", "Cloudflare", "DigitalOcean"] },
+    { group: "Infra", items: ["Docker", "Vercel", "Cloudflare", "DigitalOcean", "Coolify"] },
     { group: "AI", items: ["Claude"] },
   ],
   contact: {
