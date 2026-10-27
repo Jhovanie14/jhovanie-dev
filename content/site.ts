@@ -8,17 +8,6 @@ import { z } from "zod"
 const imageSchema = z.object({
   src: z.string().startsWith("/"),
   alt: z.string().min(1),
-  caption: z.string().optional(),
-})
-
-const socialSchema = z.object({
-  label: z.string(),
-  href: z.url(),
-})
-
-const navItemSchema = z.object({
-  label: z.string(),
-  href: z.string().startsWith("/", "nav items are real routes, not #anchors"),
 })
 
 const projectSchema = z.object({
@@ -26,6 +15,8 @@ const projectSchema = z.object({
   title: z.string().min(1),
   summary: z.string().max(140),
   year: z.number().int().min(2000),
+  /** 1–12, shown with the year in the case study. */
+  month: z.number().int().min(1).max(12).optional(),
   role: z.string(),
   problem: z.string(),
   solution: z.string(),
@@ -35,10 +26,10 @@ const projectSchema = z.object({
     live: z.url().optional(),
     repo: z.url().optional(),
   }),
+  /** Shown on the monitor; put the file at public/work/<slug>/cover.png. */
   cover: imageSchema,
+  /** More screenshots for the monitor to play, in order (full-page shots scroll). */
   gallery: z.array(imageSchema).default([]),
-  featured: z.boolean().default(true),
-  placeholder: z.boolean().default(false),
 })
 
 const experienceSchema = z.object({
@@ -49,21 +40,8 @@ const experienceSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}$/)
     .or(z.literal("present")),
-  location: z.string().optional(),
   highlights: z.array(z.string()).max(4),
   stack: z.array(z.string()).default([]),
-})
-
-/** The layers a request passes through, outermost first. The hero trace walks them in this order. */
-export const layers = ["edge", "interface", "api", "data"] as const
-
-const skillGroupSchema = z.object({
-  group: z.string(),
-  items: z.array(z.string()).min(1),
-  /** Where this group sits on the request path, if it does. */
-  layer: z.enum(layers).optional(),
-  /** One sentence on what I do at this layer. */
-  note: z.string().optional(),
 })
 
 export const siteSchema = z.object({
@@ -72,66 +50,18 @@ export const siteSchema = z.object({
   yearsOfExperience: z.number().int().positive(),
   url: z.url(),
   location: z.string(),
-  timezone: z.string(),
-  availability: z.object({
-    open: z.boolean(),
-    label: z.string(),
-  }),
+  availability: z.string(),
+  /** The sentence under the name. */
+  intro: z.string(),
   avatar: imageSchema,
   illustration: imageSchema,
-  cta: z.object({
-    book: z.string(),
-    work: z.string(),
-  }),
-  bio: z.object({
-    short: z.string().max(160),
-    long: z.string(),
-  }),
   email: z.email(),
-  bookingUrl: z.url(),
   cvUrl: z.string().optional(),
-  socials: z.array(socialSchema),
-  nav: z.array(navItemSchema),
-  services: z.array(z.object({ title: z.string(), description: z.string(), stack: z.array(z.string()).default([]) })),
-  process: z.array(z.object({ title: z.string(), when: z.string(), description: z.string() })).max(5),
+  socials: z.array(z.object({ label: z.string(), href: z.url() })),
   projects: z.array(projectSchema).max(6),
   experience: z.array(experienceSchema),
-  skills: z.array(skillGroupSchema),
-  assembly: z.object({
-    stack: z.string(),
-    hint: z.string(),
-    project: z.object({ problem: z.string(), solution: z.string(), stack: z.string(), outcome: z.string() }),
-    career: z.string(),
-    process: z.string(),
-  }),
-  home: z.object({
-    intro: z.string(),
-    work: z.object({ title: z.string(), all: z.string() }),
-    services: z.object({ title: z.string(), parts: z.string() }),
-    about: z.object({ more: z.string() }),
-  }),
-  contact: z.object({
-    prompt: z.tuple([z.string(), z.string()]),
-    next: z.string(),
-    copy: z.string(),
-    copied: z.string(),
-  }),
-  about: z.object({
-    title: z.string(),
-    facts: z.object({ based: z.string(), experience: z.string(), status: z.string() }),
-    record: z.object({ roles: z.string(), stack: z.string() }),
-    process: z.string(),
-    cv: z.string(),
-    present: z.string(),
-  }),
-  projectsPage: z.object({
-    title: z.string(),
-    intro: z.string(),
-    labels: z.object({ role: z.string(), year: z.string(), stack: z.string(), outcome: z.string() }),
-    pending: z.string(),
-    empty: z.object({ title: z.string(), body: z.string() }),
-  }),
-  footer: z.object({ description: z.string(), build: z.string() }),
+  skills: z.array(z.object({ group: z.string(), items: z.array(z.string()).min(1) })),
+  contact: z.object({ title: z.string(), body: z.string() }),
   errorPage: z.object({
     title: z.string(),
     body: z.string(),
@@ -143,183 +73,238 @@ export const siteSchema = z.object({
 export type Site = z.infer<typeof siteSchema>
 export type Project = Site["projects"][number]
 export type Experience = Site["experience"][number]
-export type Layer = (typeof layers)[number]
 
-const placeholderProject = (n: number, slug: string): z.input<typeof projectSchema> => ({
-  slug,
-  title: `Project ${n} (TODO)`,
-  summary: "TODO: one-line summary of what it is and who it's for.",
-  year: 2025,
-  role: "TODO: e.g. Lead full-stack engineer",
-  problem: "TODO: what was broken, slow, or missing — and for whom.",
-  solution: "TODO: what you built and the key technical decisions.",
-  outcome: "TODO: measurable result (speed, revenue, users, time saved).",
-  stack: ["Laravel", "Inertia", "React", "MySQL"],
-  links: {},
-  cover: { src: `/work/${slug}/cover.png`, alt: `Project ${n} cover` },
-  gallery: [],
-  featured: true,
-  placeholder: true,
-})
+/** A role's years, e.g. "2023–2024", "2026–now", or just "2025" when it started and ended that year. */
+export function yearSpan(start: string, end: string) {
+  const from = start.slice(0, 4)
+  const to = end === "present" ? "now" : end.slice(0, 4)
+  return from === to ? from : `${from}–${to}`
+}
 
-const cvUrl = "/cv.pdf" // TODO: add public/cv.pdf (links to it stay hidden until it exists)
+const years = 4
 
 export const site = siteSchema.parse({
   name: "Jhovanie Flores",
   role: "Senior Software Engineer",
-  yearsOfExperience: 4,
-  url: "https://jhovanie.dev", // TODO: confirm domain
-  location: "TODO: City, Country",
-  timezone: "UTC", // TODO: your IANA timezone, e.g. "Europe/London"
-  availability: {
-    open: true,
-    label: "Open to roles & projects",
-  },
+  yearsOfExperience: years,
+  url: "https://jhovanie.dev",
+  location: "Philippines",
+  availability: "Open to full-time roles",
+  intro: `${years} years building and shipping full-stack products with Laravel, React and Next.js.`,
   avatar: { src: "/images/image_9deddd71.jpg", alt: "Illustrated portrait of Jhovanie Flores" },
   illustration: {
     src: "/images/image_17a079d5.jpg",
     alt: "Illustration of Jhovanie Flores at a desk, laptop screen reading \"Successfully Deployed\"",
   },
-  cta: {
-    book: "Book a call",
-    work: "See the work",
-  },
-  bio: {
-    short: "I build and ship full-stack products, from the database to the deploy.",
-    long: "I'm a senior software engineer with 4 years of experience building web products end to end with Laravel, React, and Next.js, backed by MySQL/PostgreSQL and shipped on Docker, Cloudflare, DigitalOcean, and Vercel. I use Claude as part of my daily workflow to move faster without cutting corners.",
-  },
-  email: "hello@example.com", // TODO
-  bookingUrl: "https://cal.com/TODO", // TODO
-  cvUrl,
+  email: "flores.jhovanie14@gmail.com",
+  cvUrl: "/cv.pdf", // TODO: add public/cv.pdf (the "Download CV" button appears once it exists)
+  // TODO: add { label: "LinkedIn", href: "https://linkedin.com/in/..." } once the URL is ready.
   socials: [
-    { label: "GitHub", href: "https://github.com/TODO" },
-    { label: "LinkedIn", href: "https://linkedin.com/in/TODO" },
-    { label: "X", href: "https://x.com/TODO" },
+    { label: "GitHub", href: "https://github.com/jhovanie14" },
+    { label: "WhatsApp", href: "https://wa.me/639192903551" },
   ],
-  nav: [
-    { label: "Work", href: "/projects" },
-    { label: "About", href: "/about" },
-    { label: "Contact", href: "/contact" },
-  ],
-  services: [
-    {
-      title: "Full-stack web apps",
-      description: "Laravel + Inertia + React or Next.js, built from schema to UI.",
-      stack: ["Laravel", "Inertia", "React", "Next.js", "Tailwind CSS"],
-    },
-    {
-      title: "APIs & data",
-      description: "Clean APIs and well-modelled MySQL/PostgreSQL databases.",
-      stack: ["Laravel", "PHP", "MySQL", "PostgreSQL"],
-    },
-    {
-      title: "Deploy & infrastructure",
-      description: "Dockerized apps shipped on Vercel, DigitalOcean, and Cloudflare.",
-      stack: ["Docker", "Cloudflare", "DigitalOcean", "Vercel"],
-    },
-    {
-      title: "AI-assisted delivery",
-      description: "Using Claude to ship faster and add AI features where they help.",
-      stack: ["Claude"],
-    },
-  ],
-  // TODO: draft copy — edit to match how you actually work.
-  process: [
-    { title: "Intro call", when: "Day one", description: "We talk goals, users and constraints. No slides." },
-    { title: "Scope & estimate", when: "Week one", description: "A written plan: what ships first, timeline, and cost." },
-    { title: "Build & review", when: "Every week", description: "Previews on a live URL, so you see progress early." },
-    { title: "Launch & handover", when: "Launch day", description: "Deployed, monitored and documented, ready for traffic." },
-  ],
+  // Newest first.
   projects: [
-    placeholderProject(1, "project-one"),
-    placeholderProject(2, "project-two"),
-    placeholderProject(3, "project-three"),
-    placeholderProject(4, "project-four"),
+    {
+      slug: "aesthetic-training-hub",
+      title: "Aesthetic Training Hub",
+      summary: "A UK marketplace where vetted aesthetics trainers list courses and students find, enquire and book.",
+      year: 2026,
+      month: 8,
+      role: "Full-stack developer · now maintaining",
+      problem:
+        "Students looking for aesthetics training had no way to tell which trainers were insured and qualified. Directories listed anyone, and reviews couldn't be trusted.",
+      solution:
+        "A three-role marketplace (student, trainer, admin). Every trainer is checked by a person against the GMC, NMC and GDC registers before going live. Reviews come only from real bookings. Postgres row-level security keeps each role to its own data, PostGIS powers the town or postcode search, and Stripe handles trainer subscriptions and commission. It's mobile-first, since 70–80% of students browse on a phone.",
+      outcome:
+        "Live at aesthetictraininghub.co.uk with 70+ pages shipped. I still run and maintain it.",
+      stack: ["Next.js 16", "Supabase", "Postgres + RLS", "Drizzle", "Stripe", "Resend", "PostGIS", "Playwright"],
+      links: { live: "https://aesthetictraininghub.co.uk" },
+      cover: {
+        src: "/images/aesthetic-training-hub-showcase/ath-cover.png",
+        alt: "Aesthetic Training Hub homepage on desktop and mobile",
+      },
+      gallery: [
+        {
+          src: "/images/aesthetic-training-hub-showcase/ath-screens.png",
+          alt: "Mobile flow: search, verified trainers, profile and enquiry",
+        },
+        {
+          src: "/images/aesthetic-training-hub-showcase/screenshots/desk-pricing.png",
+          alt: "Trainer pricing page with Standard and Premium plans",
+        },
+        {
+          src: "/images/aesthetic-training-hub-showcase/screenshots/mob-home.png",
+          alt: "Mobile homepage with specialism and postcode search",
+        },
+        {
+          src: "/images/aesthetic-training-hub-showcase/screenshots/mob-profile.png",
+          alt: "Mobile trainer profile with verified badge, reviews and price",
+        },
+      ],
+    },
+    {
+      slug: "megestic",
+      title: "Megestic",
+      summary: "A phone system for a group of local brands: calls, texts and voicemail in one place, with an AI receptionist as backup.",
+      year: 2026,
+      month: 6,
+      role: "Full-stack developer",
+      problem:
+        "A group of local brands, each with its own phone number, losing calls whenever nobody on the team was free, with calls, texts and voicemail spread across separate places.",
+      solution:
+        "The Hourglass web panel, a Chrome extension and the phone app share one system. Telnyx sends each call to a voice webhook that knows which brand the number belongs to. Every reachable agent rings at once: in the browser over WebRTC, in the Chrome call panel, or on their phone, woken by an FCM push. If nobody answers, that brand's AI receptionist picks up in the brand's name, takes the details, and can transfer to a person who comes online. Every call is recorded on two channels and transcribed. A Slack note lands in the brand's channel with why they called, what the AI did and anything at risk. Agents log outcomes and follow-ups, and a signed, read-only events API lets the group's other AI system follow every call, text and voicemail.",
+      outcome: "In use across the group's brands on web, Chrome and mobile: Chrome extension at v3.2, covered by 445 automated tests.", // TODO: confirm, add a number (calls handled, missed calls saved)
+      stack: [
+        "Next.js 16",
+        "React 19",
+        "Supabase (Postgres, Auth, RLS, Realtime, Storage)",
+        "Telnyx (Voice API, WebRTC, SMS, AI Assistant)",
+        "Chrome Extension MV3",
+        "Firebase Cloud Messaging",
+        "Slack",
+        "Tailwind v4",
+        "shadcn/ui",
+        "Vitest",
+      ],
+      links: {},
+      cover: {
+        src: "/images/megestic-showcase/mg-cover.png",
+        alt: "Megestic dashboard with the Chrome call panel, shown with demo data",
+      },
+      gallery: [
+        {
+          src: "/images/megestic-showcase/mg-screens.png",
+          alt: "Call history with the AI receptionist's transcript, and the Chrome call panel's texts and recent calls",
+        },
+        {
+          src: "/images/megestic-showcase/mg-system.png",
+          alt: "How a call is answered: ring everyone, then the AI receptionist, then the hand-off",
+        },
+      ],
+    },
+    {
+      slug: "bucket-baddie",
+      title: "Bucket Baddie",
+      summary: "Online ordering for a Houston wing spot, wired into Square: pay online, the ticket hits the kitchen, stock counts itself.",
+      year: 2026,
+      month: 5,
+      role: "Full-stack developer",
+      problem:
+        "A pick-up wing spot taking orders through Square, with the website, the kitchen's POS and the stock room all kept in step by hand, and no way for customers to see where their order was.",
+      solution:
+        "Checkout re-prices the cart on the server, checks coupons and enforces store hours, then charges the card through Square and creates the kitchen's pick-up ticket on the POS. When staff move the ticket, a signed Square webhook syncs the status back, and the customer's tracking page updates live over Reverb WebSockets, re-checking if a broadcast is missed. Every Square sale, from the website or the till, arrives as an idempotent Horizon job. Recipes turn \"12 wings, Garlic Drip\" into exact ingredient amounts, and a stock ledger records every movement, so the owner sees what was used, wasted and needs restocking from one dashboard.",
+      outcome: "Live at bucketbaddie.com: 45 screens across the site and admin, covered by 357 automated tests.",
+      stack: ["Laravel 13", "PHP 8.5", "Vue 3", "Inertia v3 (SSR)", "Laravel Reverb", "Horizon", "Square API", "Tailwind v4", "Pest", "Docker", "DigitalOcean"],
+      links: { live: "https://bucketbaddie.com" },
+      cover: {
+        src: "/images/bucket-baddie-showcase/bb-cover.png",
+        alt: "Bucket Baddie homepage on desktop and mobile",
+      },
+      gallery: [
+        {
+          src: "/images/bucket-baddie-showcase/bb-screens.png",
+          alt: "Mobile flow: build an order, filter sauces by heat, the Ghost Mode challenge",
+        },
+        {
+          src: "/images/bucket-baddie-showcase/bb-system.png",
+          alt: "How one order keeps the website, the Square POS and the stock count in sync",
+        },
+      ],
+    },
+    {
+      slug: "the-launch-pad",
+      title: "The Launch Pad",
+      summary: "The full digital side of a Houston car wash: bookings, memberships, 24/7 bays, a store, and the console that runs the day.",
+      year: 2025,
+      month: 11,
+      role: "Full-stack developer",
+      problem:
+        "A car wash with three businesses under one roof (24/7 self-service bays, booked detailing and an unlimited membership) plus a product range, and nothing online tying them together for drivers, staff or fleet customers.",
+      solution:
+        "One platform for three audiences: drivers, staff and fleet. Stripe handles one-off bookings, monthly memberships and the store's cart checkout, with pickup or local delivery. Customers track bookings and orders in their own dashboard, and an admin console handles the day's schedule, fulfilment and refunds. Supabase auth and row-level security keep each audience to its own data. The store gets its own black-and-gold theme scoped to one route, while the rest of the site stays light.",
+      outcome: "Live at thelaunchpadwash.com: 67 pages and 51 API routes.",
+      stack: ["Next.js 16", "React 19", "TypeScript", "Supabase (PostgreSQL, Auth, RLS)", "Stripe", "Resend", "Tailwind v4", "shadcn/ui", "Motion", "Vitest", "Vercel", "Cloudflare"],
+      links: { live: "https://thelaunchpadwash.com" },
+      cover: {
+        src: "/images/the-launch-pad-showcase/tlp-cover.png",
+        alt: "The Launch Pad homepage on desktop and mobile",
+      },
+      gallery: [
+        {
+          src: "/images/the-launch-pad-showcase/tlp-screens.png",
+          alt: "Mobile flow: choose a service, book a detail, join the unlimited membership",
+        },
+        {
+          src: "/images/the-launch-pad-showcase/tlp-store.png",
+          alt: "The Pro Series storefront in its own black-and-gold theme",
+        },
+      ],
+    },
   ],
   experience: [
     {
-      company: "TODO: Company",
-      title: "Senior Software Engineer",
-      start: "2024-01", // TODO
+      company: "Equals3",
+      title: "Full-Stack Web Developer",
+      start: "2026-07",
       end: "present",
-      highlights: ["TODO: highlight with a measurable outcome"],
-      stack: ["Laravel", "React", "PostgreSQL"],
+      highlights: [
+        "Built and maintain Aesthetic Training Hub, a live UK marketplace for vetted aesthetics trainers, across 70+ pages.",
+        "Three-role system with Row Level Security, register-checked trainers and reviews only from real bookings.",
+      ],
+      stack: ["Next.js", "Supabase", "Stripe", "PostGIS", "Playwright"],
     },
     {
-      company: "TODO: Company",
-      title: "Software Engineer",
-      start: "2022-01", // TODO
-      end: "2023-12", // TODO
-      highlights: ["TODO: highlight with a measurable outcome"],
-      stack: ["Laravel", "Inertia", "MySQL"],
+      company: "Hourglass Investment LLC",
+      title: "Full-Stack Web Developer",
+      start: "2025-08",
+      end: "2026-06",
+      highlights: [
+        "Built Hourglass Mobile, the group's phone system: WebRTC calling, SMS, voicemail and an AI receptionist (445 tests).",
+        "Built Bucket Baddie's ordering platform on the full Square ecosystem, with live tracking and inventory (357 tests).",
+        "Solo-built The Launchpad Wash: bookings, Stripe memberships and a store (67 pages, 51 API routes).",
+      ],
+      stack: ["Next.js", "Supabase", "Telnyx", "Laravel", "Vue", "Square", "Stripe"],
+    },
+    {
+      company: "Aero IDX",
+      title: "Software Developer",
+      start: "2025-02",
+      end: "2025-06",
+      highlights: ["Shipped backend and frontend modules with Laravel, Vue, Inertia and Tailwind in an agile team."],
+      stack: ["Laravel", "Vue", "Inertia"],
+    },
+    {
+      company: "University of Mindanao",
+      title: "College Instructor",
+      start: "2024-07",
+      end: "2024-12",
+      highlights: ["Taught PHP, Laravel, MySQL and Python, and mentored students through real-world capstone projects."],
+      stack: ["PHP", "Laravel", "MySQL"],
+    },
+    {
+      company: "RAG IT Solution",
+      title: "Junior Software Developer",
+      start: "2023-05",
+      end: "2024-06",
+      highlights: ["Built and maintained client websites with Vue and REST APIs, and worked on Laravel Passport authentication."],
+      stack: ["Vue", "Laravel"],
     },
   ],
-  // `note` lines are draft copy, written from services and bio.long.
+  // One book on the shelf per item.
   skills: [
-    {
-      group: "Infra & Cloud",
-      items: ["Docker", "Cloudflare", "DigitalOcean", "Vercel"],
-      layer: "edge",
-      note: "Dockerized apps shipped on Vercel, DigitalOcean, and Cloudflare.",
-    },
-    {
-      group: "Frontend",
-      items: ["React", "Next.js", "Inertia", "Tailwind CSS", "TypeScript"],
-      layer: "interface",
-      note: "Interfaces in React, Next.js or Inertia, typed end to end.",
-    },
-    {
-      group: "Backend",
-      items: ["Laravel", "PHP"],
-      layer: "api",
-      note: "Clean Laravel APIs with the business rules where they belong.",
-    },
-    {
-      group: "Data",
-      items: ["MySQL", "PostgreSQL"],
-      layer: "data",
-      note: "Well-modelled MySQL and PostgreSQL schemas.",
-    },
-    { group: "AI", items: ["Claude"], note: "Claude in the daily workflow, and AI features where they help." },
+    { group: "Frontend", items: ["React", "Next.js", "Vue", "TypeScript", "Tailwind CSS"] },
+    { group: "Backend", items: ["Laravel", "PHP", "Inertia", "Reverb", "Horizon"] },
+    { group: "Data", items: ["PostgreSQL", "Supabase", "MySQL"] },
+    { group: "Integrations", items: ["Stripe", "Square", "Telnyx", "WebRTC"] },
+    { group: "Testing", items: ["Pest", "Vitest", "Playwright"] },
+    { group: "Infra", items: ["Docker", "Vercel", "Cloudflare", "DigitalOcean"] },
+    { group: "AI", items: ["Claude"] },
   ],
-  assembly: {
-    stack: "The stack",
-    hint: "Scroll to pull it apart. Pick a part to read it.",
-    project: { problem: "Problem", solution: "Solution", stack: "Stack", outcome: "Outcome" },
-    career: "Career",
-    process: "Your project",
-  },
-  home: {
-    intro: "An exploded view of what I ship, from the data model to the deploy.",
-    work: { title: "Selected work", all: "All work" },
-    services: { title: "What you can hire me for", parts: "parts" },
-    about: { more: "More about me" },
-  },
   contact: {
-    prompt: ["Have something to build?", "Let's talk it through."],
-    next: "Book a short intro call, or copy my email and write to me.",
-    copy: "Copy email",
-    copied: "Copied",
+    title: "Hiring?",
+    body: "I'm looking for a full-time role. I'd like to hear about yours.",
   },
-  about: {
-    title: "About",
-    facts: { based: "Based in", experience: "Experience", status: "Status" },
-    record: { roles: "Roles", stack: "Stack" },
-    process: "How a project runs",
-    cv: "Download CV",
-    present: "now",
-  },
-  projectsPage: {
-    title: "Work",
-    intro: "Products I've built and shipped end to end: the problem, my role, the stack, and what changed.",
-    labels: { role: "Role", year: "Year", stack: "Stack", outcome: "Outcome" },
-    pending: "Screenshot coming",
-    empty: {
-      title: "No case studies yet",
-      body: "They're on their way. In the meantime, tell me about your project.",
-    },
-  },
-  footer: { description: "Full-stack software engineer", build: "build" },
   errorPage: {
     title: "Something broke",
     body: "This page hit an error. Try again, or head back to the start.",

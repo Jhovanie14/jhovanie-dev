@@ -1,148 +1,49 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-
-@custom-variant dark (&:is(.dark *));
 
 @theme inline {
     --font-heading: var(--font-unbounded);
     --font-sans: var(--font-onest);
     --color-accent-ink: var(--accent-ink);
     --color-primary-hover: var(--primary-hover);
-    --color-surface: var(--surface);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
     --color-primary-foreground: var(--primary-foreground);
     --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
     --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
     --color-card: var(--card);
+    --color-muted-foreground: var(--muted-foreground);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
+    --color-border: var(--border);
+    --color-ring: var(--ring);
 }
 
 @theme {
-    /* Motion (DESIGN.md §5). lib/motion.ts mirrors these for GSAP. */
-    --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
-    --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-travel: cubic-bezier(0.76, 0, 0.24, 1);
-    --ease-exit: cubic-bezier(0.55, 0.055, 0.675, 0.19);
-
-    /* Five type steps, Familjen Grotesk (DESIGN.md §3). Nothing else is set on page content. */
-    --text-display: clamp(3rem, 6.4vw, 6rem);
-    --text-display--line-height: 0.92;
-    --text-display--letter-spacing: -0.035em;
-    --text-heading: clamp(1.75rem, 1.3rem + 1.6vw, 2.5rem);
-    --text-heading--line-height: 1.1;
-    --text-heading--letter-spacing: -0.015em;
-    --text-lead: clamp(1.25rem, 1.1rem + 0.7vw, 1.625rem);
-    --text-lead--line-height: 1.35;
-    --text-body: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
-    --text-body--line-height: 1.5;
     --text-small: 0.875rem;
     --text-small--line-height: 1.45;
 }
 
 /*
- * The desk at night (DESIGN.md §2): a dark room, warm white text, and the
- * orange of the shirt in the portrait for the one action and the live state.
- * One theme: the room is always at night.
+ * The desk at night: a dark room, warm white text, and the orange of the
+ * shirt in the portrait for the one action and the live state.
  */
-:root,
-.dark {
+:root {
     color-scheme: dark;
     --background: #0d0d10;
     --foreground: #f2ede6;
-    --surface: #151518;
     --card: #151518;
-    --card-foreground: #f2ede6;
     --popover: #1c1c20;
-    --popover-foreground: #f2ede6;
     --primary: #ff7a1a;
     --primary-foreground: #0d0d10;
     --primary-hover: #ff9142;
     --accent-ink: #ff9a52;
-    --secondary: #1c1c20;
-    --secondary-foreground: #f2ede6;
-    --muted: #1c1c20;
     --muted-foreground: #a39d94;
-    --accent: #24242a;
-    --accent-foreground: #f2ede6;
-    --destructive: #ff6b5b;
     --border: rgb(242 237 230 / 12%);
-    --input: rgb(242 237 230 / 16%);
     --ring: #ff7a1a;
     --radius: 0.75rem;
-
-    /* Page transitions */
-    --vt-exit: 150ms;
-    --vt-enter: 240ms;
-    --vt-move: 420ms;
-    --vt-offset: 24px;
-}
-
-/* The page frame: one pair of equal outer margins at every width. */
-@utility frame {
-  width: 100%;
-  max-width: 90rem;
-  margin-inline: auto;
-  padding-inline: clamp(1.25rem, 4vw, 3rem);
-}
-
-/* A readable text measure. */
-@utility column {
-  width: 100%;
-  max-width: 40rem;
-}
-
-/* Display type: the name, page titles. Familjen bold, tight. */
-@utility display {
-  font-size: var(--text-display);
-  line-height: var(--text-display--line-height);
-  letter-spacing: var(--text-display--letter-spacing);
-  font-weight: 700;
-}
-
-/* Press feedback for every button-like control. */
-@utility press {
-  transition:
-    transform 140ms var(--ease-glide),
-    background-color 180ms ease,
-    color 180ms ease;
-  &:active {
-    transform: scale(0.97);
-  }
-}
-
-/* Links that answer the pointer: the underline arrives instead of being there at rest. */
-@utility link {
-  text-decoration-line: underline;
-  text-decoration-color: transparent;
-  text-decoration-thickness: 0.07em;
-  text-underline-offset: 0.2em;
-  transition: text-decoration-color 180ms ease;
-  &:hover {
-    text-decoration-color: currentColor;
-  }
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   html {
     @apply font-sans;
@@ -152,7 +53,7 @@
     scrollbar-color: var(--muted-foreground) transparent;
   }
   body {
-    @apply bg-background text-body text-foreground;
+    @apply bg-background text-foreground;
     caret-color: var(--primary);
   }
   ::selection {
@@ -168,20 +69,12 @@
   }
 }
 
-/* ---------- Motion gates (DESIGN.md §5) ---------- */
-
 /*
- * Scroll reveals (React Bits AnimatedContent, [data-reveal]), split headings
- * ([data-split]) and the load sequence ([data-load]) start hidden only when
- * JavaScript is running (html.js) and motion is allowed. If a script never
- * runs, the fallback shows them anyway.
+ * The intro panel fades in with the room's lights ([data-load]). It starts
+ * hidden only when JavaScript is running (html.js) and motion is allowed, and
+ * shows anyway after 2s if the script never runs.
  */
 @media (prefers-reduced-motion: no-preference) {
-  .js [data-reveal],
-  .js [data-split="pending"] {
-    visibility: hidden;
-    animation: reveal-fallback 0s linear 2.5s forwards;
-  }
   .js [data-load] {
     opacity: 0;
     animation: reveal-fallback 0s linear 2s forwards;
@@ -189,67 +82,6 @@
 }
 @keyframes reveal-fallback {
   to {
-    visibility: visible;
     opacity: 1;
-  }
-}
-
-/* ---------- Page transitions (React <ViewTransition>) ---------- */
-
-::view-transition {
-  pointer-events: none;
-}
-
-/* The header is the fixed reference point: it never animates. */
-::view-transition-group(site-header) {
-  animation: none;
-  z-index: 100;
-}
-::view-transition-old(site-header) {
-  display: none;
-}
-::view-transition-new(site-header) {
-  animation: none;
-}
-
-::view-transition-old(.nav-forward),
-::view-transition-old(.nav-back) {
-  animation: var(--vt-exit) var(--ease-exit) both vt-fade reverse;
-}
-::view-transition-new(.nav-forward) {
-  --vt-from: var(--vt-offset);
-  animation:
-    var(--vt-enter) var(--ease-glide) var(--vt-exit) both vt-fade,
-    var(--vt-move) var(--ease-glide) var(--vt-exit) both vt-slide;
-}
-::view-transition-new(.nav-back) {
-  --vt-from: calc(var(--vt-offset) * -1);
-  animation:
-    var(--vt-enter) var(--ease-glide) var(--vt-exit) both vt-fade,
-    var(--vt-move) var(--ease-glide) var(--vt-exit) both vt-slide;
-}
-
-@keyframes vt-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes vt-slide {
-  from {
-    translate: 0 var(--vt-from);
-  }
-  to {
-    translate: 0 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-new(.nav-forward),
-  ::view-transition-new(.nav-back) {
-    animation: var(--vt-enter) ease both vt-fade;
   }
 }

@@ -2,8 +2,6 @@ import type { Metadata } from "next"
 import { Onest, Unbounded } from "next/font/google"
 
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import { TooltipProvider } from "@/components/ui/tooltip"
 import { site } from "@/content/site"
 import { cn } from "@/lib/utils"
 
@@ -17,7 +15,7 @@ export const metadata: Metadata = {
     default: `${site.name} · ${site.role}`,
     template: `%s · ${site.name}`,
   },
-  description: site.bio.short,
+  description: `${site.role}. ${site.intro}`,
 }
 
 export default function RootLayout({
@@ -33,16 +31,10 @@ export default function RootLayout({
       className={cn("antialiased", unbounded.variable, onest.variable, "font-sans")}
     >
       <head>
-        {/* Motion gates key off html.js, so without JavaScript nothing waits to be revealed (DESIGN.md §5). */}
+        {/* The intro panel's fade-in keys off html.js, so without JavaScript nothing waits to be revealed. */}
         <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
       </head>
-      <body>
-        <ThemeProvider defaultTheme="dark" forcedTheme="dark">
-          <TooltipProvider delay={300}>
-            {children}
-          </TooltipProvider>
-        </ThemeProvider>
-      </body>
+      <body>{children}</body>
     </html>
   )
 }

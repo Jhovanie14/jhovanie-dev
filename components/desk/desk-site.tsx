@@ -3,14 +3,15 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import * as THREE from "three"
-import { IconArrowDown, IconArrowLeft, IconCheck, IconCopy } from "@tabler/icons-react"
+import { IconArrowDown, IconArrowLeft, IconArrowsMaximize, IconCheck, IconCopy } from "@tabler/icons-react"
 
-import { site } from "@/content/site"
-import { gsap, ScrollTrigger } from "@/lib/gsap-concepts"
+import { site, yearSpan } from "@/content/site"
+import { gsap, ScrollTrigger } from "@/lib/gsap"
 import { cn } from "@/lib/utils"
 
 import { buildRoom, type Stop } from "./room"
-import { drawScreen, screenHit, type ScreenState, type Shots } from "./screen"
+import { drawScreen, screenHit, shotOnScreen, type ScreenState, type Shots } from "./screen"
+import { ShotViewer } from "./shot-viewer"
 import { redraw } from "./textures"
 
 /*
@@ -36,10 +37,12 @@ const NAV: { stop: Stop; label: string }[] = [
   { stop: "contact", label: "Contact" },
 ]
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
 const go = (stop: Stop, smooth = true) => document.getElementById(stop)?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" })
 
-/** A project's screenshots as served from public/ (cover first). Only files that exist are passed. */
-export type ShotPaths = { src: string; alt: string }[]
+/** A project's screenshots as served from public/ (cover first), with pixel sizes. Only files that exist are passed. */
+export type ShotPaths = { src: string; alt: string; width: number; height: number }[]
 
 export function DeskSite({ cv, build, shots }: { cv: string | null; build: string | null; shots: ShotPaths[] }) {
   const mount = useRef<HTMLDivElement>(null)
@@ -52,6 +55,9 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
   // The 3D side reads and writes the open project through this bridge.
   const bridge = useRef<{ open: (i: number | null, image: number) => void }>({ open: () => {} })
   const [shot, setShot] = useState(0)
+  // The screenshot open full size, if any; the room stops rendering underneath it.
+  const [viewing, setViewing] = useState<number | null>(null)
+  const frozen = useRef(false)
   const openProject = (i: number | null) => {
     setShot(0)
     setProject(i)
@@ -245,6 +251,11 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
         const target = screenHit(screenState, hit.uv, site.projects.length)
         if (target && "row" in target) openProject(target.row)
         if (target && "back" in target) openProject(null)
+        // Clicking the screenshot playing on the screen opens it full size.
+        if (target && "shot" in target && screenState.mode === "detail") {
+          const count = loaded[screenState.index]?.length
+          if (count) setViewing(shotOnScreen(screenState, now(), reduce) % count)
+        }
       }
       go(hit.spot.stop, !reduce)
     }
@@ -255,6 +266,7 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
     const Y = new THREE.Vector3(0, 1, 0)
     let frame = 0
     renderer.setAnimationLoop(() => {
+      if (frozen.current) return
       // An open case study with screenshots keeps playing on the screen (about 30 fps).
       if (!reduce && screenState.mode === "detail" && loaded[screenState.index]?.length && frame++ % 2 === 0) paint()
       place(progress)
@@ -298,6 +310,10 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
     bridge.current.open(project, shot)
   }, [project, shot])
 
+  useEffect(() => {
+    frozen.current = viewing !== null
+  }, [viewing])
+
   // Which stop is on screen, for the nav.
   useEffect(() => {
     const io = new IntersectionObserver(
@@ -319,11 +335,11 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
 
   const linkedin = site.socials.find((s) => s.label === "LinkedIn")
   const github = site.socials.find((s) => s.label === "GitHub")
-  const year = (v: string) => v.slice(0, 4)
+  const whatsapp = site.socials.find((s) => s.label === "WhatsApp")
   const open = project === null ? null : site.projects[project]
 
-  const section = "relative flex min-h-svh items-end pb-10 lg:items-center lg:pb-0"
-  const panel = "pointer-events-auto w-full max-w-md rounded-[var(--radius)] bg-card/95 p-5 sm:p-7"
+  const section = "relative flex min-h-svh items-end pt-20 pb-10 lg:items-center lg:pb-0"
+  const panel = "pointer-events-auto max-h-[calc(100svh-8rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-[var(--radius)] bg-card/95 p-5 sm:p-7"
   const heading = "font-heading text-[1.75rem] font-extrabold tracking-[-0.01em]"
 
   return (
@@ -372,11 +388,11 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
               {site.name}
             </h1>
             <p className="mt-4 text-[clamp(1.0625rem,1.4vw,1.25rem)] leading-snug">
-              {site.role}. {site.yearsOfExperience} years building and shipping full-stack products with Laravel, React and Next.js.
+              {site.role}. {site.intro}
             </p>
             <p className="mt-3 flex items-center gap-2 font-medium text-accent-ink">
               <span aria-hidden className="size-2 rounded-full bg-primary" />
-              Open to full-time roles
+              {site.availability}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <a href={`mailto:${site.email}`} className="inline-flex h-12 items-center rounded-full bg-primary px-6 font-semibold text-primary-foreground transition-transform duration-150 hover:bg-primary-hover active:scale-[0.97]">
@@ -407,25 +423,34 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
                   {open.title}
                 </h2>
                 <p className="mt-1 text-muted-foreground">
+                  {open.month ? `${MONTHS[open.month - 1]} ` : ""}
                   {open.year} · {open.role}
                 </p>
-                {/* The screenshots playing on the monitor; pick one to show it now. */}
+                {/* The screenshots playing on the monitor; each opens full size. */}
                 {shots[project!]?.length > 0 && (
-                  <ul aria-label="Screenshots" className="mt-4 flex gap-2 overflow-x-auto pb-1">
-                    {shots[project!].map((s, k) => (
-                      <li key={s.src} className="shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => setShot(k)}
-                          aria-label={`Show screenshot ${k + 1}: ${s.alt}`}
-                          aria-pressed={shot === k}
-                          className={cn("relative block h-14 w-24 overflow-hidden rounded-md outline-2 outline-offset-2 transition-[outline-color] duration-150", shot === k ? "outline-primary" : "outline-transparent hover:outline-foreground/40")}
-                        >
-                          <Image src={s.src} alt="" fill sizes="6rem" className="object-cover object-top" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <ul aria-label="Screenshots" className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                      {shots[project!].map((s, k) => (
+                        <li key={s.src} className="shrink-0">
+                          <button
+                            type="button"
+                            data-shot={k}
+                            onClick={() => {
+                              setShot(k)
+                              setViewing(k)
+                            }}
+                            aria-label={`View screenshot ${k + 1} full size: ${s.alt}`}
+                            className={cn("relative block h-16 w-28 overflow-hidden rounded-md outline-2 outline-offset-2 transition-[outline-color] duration-150", shot === k ? "outline-primary" : "outline-transparent hover:outline-foreground/40")}
+                          >
+                            <Image src={s.src} alt="" fill sizes="7rem" className="object-cover object-top" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-1 flex items-center gap-1.5 text-[14px] text-muted-foreground">
+                      <IconArrowsMaximize aria-hidden stroke={1.75} className="size-4" /> Tap a screenshot to see it full size.
+                    </p>
+                  </>
                 )}
                 <dl className="mt-4 flex flex-col gap-3">
                   {[
@@ -492,7 +517,7 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
                   <p className="flex items-baseline justify-between gap-4">
                     <span className="text-[1.125rem] font-semibold">{e.title}</span>
                     <span className="text-[14px] text-muted-foreground tabular-nums">
-                      {year(e.start)}–{e.end === "present" ? "now" : year(e.end)}
+                      {yearSpan(e.start, e.end)}
                     </span>
                   </p>
                   <p className="text-muted-foreground">{e.company}</p>
@@ -510,9 +535,9 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
         <section id="contact" aria-labelledby="contact-title" className={section}>
           <div className={panel}>
             <h2 id="contact-title" className={heading}>
-              Hiring?
+              {site.contact.title}
             </h2>
-            <p className="mt-2 text-[1.125rem]">I&rsquo;m looking for a full-time role. I&rsquo;d like to hear about yours.</p>
+            <p className="mt-2 text-[1.125rem]">{site.contact.body}</p>
             <div className="mt-5 flex h-14 items-center justify-between gap-3 rounded-full bg-popover pr-1.5 pl-5">
               <a href={`mailto:${site.email}`} className="min-w-0 truncate font-medium underline decoration-transparent underline-offset-4 hover:decoration-current">
                 {site.email}
@@ -534,7 +559,7 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
               </button>
             </div>
             <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-2 font-semibold">
-              {[linkedin, github].filter(Boolean).map((s) => (
+              {[linkedin, github, whatsapp].filter(Boolean).map((s) => (
                 <li key={s!.label}>
                   <a href={s!.href} target="_blank" rel="noopener noreferrer" className="underline decoration-primary decoration-2 underline-offset-4">
                     {s!.label}
@@ -555,6 +580,20 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
           </div>
         </section>
       </main>
+
+      {open && shots[project!]?.length > 0 && (
+        <ShotViewer
+          title={open.title}
+          shots={shots[project!]}
+          index={viewing}
+          onIndex={setViewing}
+          onClose={(k) => {
+            setViewing(null)
+            setShot(k)
+          }}
+          origin={(k) => document.querySelector<HTMLElement>(`[data-shot="${k}"]`)}
+        />
+      )}
     </div>
   )
 }

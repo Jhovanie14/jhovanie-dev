@@ -1,7 +1,7 @@
 import * as THREE from "three"
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js"
 
-import { site } from "@/content/site"
+import { site, yearSpan } from "@/content/site"
 
 import { SCREEN } from "./screen"
 import { canvasTexture, wallTexture, woodTexture, wrap } from "./textures"
@@ -211,37 +211,39 @@ export function buildRoom(scene: THREE.Scene, opts: { small: boolean; fonts: Fon
   scene.add(shelf)
   hotspots.push({ mesh: shelf, stop: "skills", label: "Shelf: skills" })
   const bookColors = ["#C8553D", "#2E5266", "#E0B35A", "#4F7A5A", "#7B5EA7", "#D9D4C7", "#B5476B", "#3D6E8C"]
+  const tools = site.skills.flatMap((g) => g.items)
+  // Books come in a few widths; with a long list they all slim down to fit the 1.9 m of shelf.
+  const widths = tools.map((_, i) => 0.075 + ((i * 13) % 4) * 0.012)
+  const fit = Math.min(1, 1.9 / widths.reduce((sum, w) => sum + w + 0.006, 0))
   let x = -1.08
-  site.skills
-    .flatMap((g) => g.items)
-    .forEach((tool, i) => {
-      const color = bookColors[i % bookColors.length]
-      const h = 0.26 + ((i * 37) % 9) * 0.012
-      const w = 0.075 + ((i * 13) % 4) * 0.012
-      const book = rbox(w, h, 0.2, mat(color, { roughness: 0.8 }), 0.006)
-      book.position.set(x + w / 2, 1.8 + h / 2, -0.84)
-      const spine = new THREE.Mesh(
-        new THREE.PlaneGeometry(w * 0.86, h * 0.9),
-        new THREE.MeshStandardMaterial({
-          roughness: 0.85,
-          map: canvasTexture(64, 340, (ctx) => {
-            ctx.fillStyle = color
-            ctx.fillRect(0, 0, 64, 340)
-            ctx.save()
-            ctx.translate(40, 320)
-            ctx.rotate(-Math.PI / 2)
-            ctx.fillStyle = color === "#D9D4C7" || color === "#E0B35A" ? "#15181B" : "#F7F2EA"
-            ctx.font = `600 26px ${fonts.body}`
-            ctx.fillText(tool, 0, 0)
-            ctx.restore()
-          }),
-        })
-      )
-      spine.position.set(x + w / 2, 1.8 + h / 2, -0.7395)
-      scene.add(book, spine)
-      hotspots.push({ mesh: book, stop: "skills", label: `Shelf: ${tool}` })
-      x += w + 0.006
-    })
+  tools.forEach((tool, i) => {
+    const color = bookColors[i % bookColors.length]
+    const h = 0.26 + ((i * 37) % 9) * 0.012
+    const w = widths[i] * fit
+    const book = rbox(w, h, 0.2, mat(color, { roughness: 0.8 }), 0.006)
+    book.position.set(x + w / 2, 1.8 + h / 2, -0.84)
+    const spine = new THREE.Mesh(
+      new THREE.PlaneGeometry(w * 0.86, h * 0.9),
+      new THREE.MeshStandardMaterial({
+        roughness: 0.85,
+        map: canvasTexture(64, 340, (ctx) => {
+          ctx.fillStyle = color
+          ctx.fillRect(0, 0, 64, 340)
+          ctx.save()
+          ctx.translate(40, 320)
+          ctx.rotate(-Math.PI / 2)
+          ctx.fillStyle = color === "#D9D4C7" || color === "#E0B35A" ? "#15181B" : "#F7F2EA"
+          ctx.font = `600 26px ${fonts.body}`
+          ctx.fillText(tool, 0, 0)
+          ctx.restore()
+        }),
+      })
+    )
+    spine.position.set(x + w / 2, 1.8 + h / 2, -0.7395)
+    scene.add(book, spine)
+    hotspots.push({ mesh: book, stop: "skills", label: `Shelf: ${tool}` })
+    x += w + 0.006
+  })
 
   // The board on the left wall: the roles.
   const corkFrame = rbox(0.04, 1.0, 1.56, mat("#3A2E26", { roughness: 0.8 }), 0.01)
@@ -258,8 +260,10 @@ export function buildRoom(scene: THREE.Scene, opts: { small: boolean; fonts: Fon
         ctx.fillStyle = "#15181B"
         ctx.font = `800 64px ${fonts.display}`
         ctx.fillText("Experience", 64, 120)
+        // Roles share the board's height; with more than three there is only room for the title, company and years.
+        const step = Math.min(220, 740 / Math.max(1, site.experience.length))
         site.experience.forEach((e, i) => {
-          const y = 230 + i * 220
+          const y = 230 + i * step
           ctx.fillStyle = ORANGE
           ctx.fillRect(64, y - 34, 16, 16)
           ctx.fillStyle = "#15181B"
@@ -267,9 +271,9 @@ export function buildRoom(scene: THREE.Scene, opts: { small: boolean; fonts: Fon
           ctx.fillText(e.title, 100, y)
           ctx.fillStyle = "#55555C"
           ctx.font = `400 34px ${fonts.body}`
-          ctx.fillText(`${e.company} · ${e.start.slice(0, 4)}–${e.end === "present" ? "now" : e.end.slice(0, 4)}`, 100, y + 52)
+          ctx.fillText(`${e.company} · ${yearSpan(e.start, e.end)}`, 100, y + 52)
           wrap(ctx, e.highlights.join(" "), 1300)
-            .slice(0, 2)
+            .slice(0, step >= 200 ? 2 : 0)
             .forEach((line, l) => ctx.fillText(line, 100, y + 100 + l * 44))
         })
       }),
@@ -302,10 +306,10 @@ export function buildRoom(scene: THREE.Scene, opts: { small: boolean; fonts: Fon
         ctx.fillRect(0, 0, 340, 260)
         ctx.fillStyle = "#15181B"
         ctx.font = `800 30px ${fonts.display}`
-        ctx.fillText("Hiring?", 22, 60)
+        ctx.fillText(site.contact.title, 22, 60)
         ctx.font = `500 20px ${fonts.body}`
         ctx.fillText(site.email, 22, 120)
-        ctx.fillText("Open to full-time roles", 22, 160)
+        ctx.fillText(site.availability, 22, 160)
       }),
     })
   )

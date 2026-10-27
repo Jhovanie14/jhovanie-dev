@@ -109,7 +109,7 @@ export function drawScreen(ctx: CanvasRenderingContext2D, state: ScreenState, pr
   const area = { w, h: h - BAR }
   if (set.length > 0) {
     const elapsed = Math.max(0, now - state.since)
-    const turn = still ? state.image : state.image + Math.floor(elapsed / SHOT_TIME)
+    const turn = shotOnScreen(state, now, still)
     const local = still ? 0.5 : (elapsed % SHOT_TIME) / SHOT_TIME
     const cur = set[turn % set.length]
     ctx.save()
@@ -148,7 +148,7 @@ export function drawScreen(ctx: CanvasRenderingContext2D, state: ScreenState, pr
   ctx.font = `600 30px ${f.body}`
   ctx.fillText(p.title, BACK.w + 20, h - BAR / 2 + 10)
   if (set.length > 1) {
-    const n = (still ? state.image : state.image + Math.floor(Math.max(0, now - state.since) / SHOT_TIME)) % set.length
+    const n = shotOnScreen(state, now, still) % set.length
     ctx.fillStyle = soft
     ctx.font = `400 26px ${f.body}`
     const label = `${n + 1} of ${set.length}`
@@ -156,14 +156,19 @@ export function drawScreen(ctx: CanvasRenderingContext2D, state: ScreenState, pr
   }
 }
 
-/** What a click at a point on the screen (uv, 0..1 from bottom-left) lands on. */
-export function screenHit(state: ScreenState, uv: { x: number; y: number }, count: number): { row: number } | { back: true } | null {
+/** Which screenshot a case study is on (not yet wrapped to the number of shots). */
+export function shotOnScreen(state: Extract<ScreenState, { mode: "detail" }>, now: number, still = false) {
+  return still ? state.image : state.image + Math.floor(Math.max(0, now - state.since) / SHOT_TIME)
+}
+
+/** What a click at a point on the screen (uv, 0..1 from bottom-left) lands on; `shot` is the screenshot itself. */
+export function screenHit(state: ScreenState, uv: { x: number; y: number }, count: number): { row: number } | { back: true } | { shot: true } | null {
   const x = uv.x * SCREEN.w
   const y = (1 - uv.y) * SCREEN.h
   if (state.mode === "list") {
     const row = Math.floor((y - ROW.top + 8) / ROW.height)
     return row >= 0 && row < count && x > 40 && x < SCREEN.w * 0.56 ? { row } : null
   }
-  if (state.mode === "detail" && x <= BACK.w && y >= SCREEN.h - BAR) return { back: true }
-  return null
+  if (state.mode === "detail" && y >= SCREEN.h - BAR) return x <= BACK.w ? { back: true } : null
+  return state.mode === "detail" ? { shot: true } : null
 }
