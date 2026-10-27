@@ -10,9 +10,13 @@ const imageSchema = z.object({
   alt: z.string().min(1),
 })
 
+/** The folders on the monitor, in order. A folder shows once it holds a project. */
+export const CATEGORIES = ["Web apps", "Landing pages", "Automation"] as const
+
 const projectSchema = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/, "slug must be kebab-case"),
   title: z.string().min(1),
+  category: z.enum(CATEGORIES),
   summary: z.string().max(140),
   year: z.number().int().min(2000),
   /** 1–12, shown with the year in the case study. */
@@ -58,7 +62,8 @@ export const siteSchema = z.object({
   email: z.email(),
   cvUrl: z.string().optional(),
   socials: z.array(z.object({ label: z.string(), href: z.url() })),
-  projects: z.array(projectSchema).max(6),
+  /** Six to a page on the monitor; more pages slide in. */
+  projects: z.array(projectSchema).max(18),
   experience: z.array(experienceSchema),
   skills: z.array(z.object({ group: z.string(), items: z.array(z.string()).min(1) })),
   contact: z.object({ title: z.string(), body: z.string() }),
@@ -85,7 +90,7 @@ const years = 4
 
 export const site = siteSchema.parse({
   name: "Jhovanie Flores",
-  role: "Senior Software Engineer",
+  role: "Full-Stack Software Engineer",
   yearsOfExperience: years,
   url: "https://jhovanie.dev",
   location: "Philippines",
@@ -98,7 +103,6 @@ export const site = siteSchema.parse({
   },
   email: "flores.jhovanie14@gmail.com",
   cvUrl: "/cv.pdf", // TODO: add public/cv.pdf (the "Download CV" button appears once it exists)
-  // TODO: add { label: "LinkedIn", href: "https://linkedin.com/in/..." } once the URL is ready.
   socials: [
     { label: "GitHub", href: "https://github.com/jhovanie14" },
     { label: "WhatsApp", href: "https://wa.me/639192903551" },
@@ -109,9 +113,10 @@ export const site = siteSchema.parse({
       slug: "aesthetic-training-hub",
       title: "Aesthetic Training Hub",
       summary: "A UK marketplace where vetted aesthetics trainers list courses and students find, enquire and book.",
+      category: "Web apps",
       year: 2026,
       month: 8,
-      role: "Full-stack developer · now maintaining",
+      role: "Solo full-stack developer · now maintaining",
       problem:
         "Students looking for aesthetics training had no way to tell which trainers were insured and qualified. Directories listed anyone, and reviews couldn't be trusted.",
       solution:
@@ -147,9 +152,10 @@ export const site = siteSchema.parse({
       slug: "megestic",
       title: "Megestic",
       summary: "A phone system for a group of local brands: calls, texts and voicemail in one place, with an AI receptionist as backup.",
+      category: "Web apps",
       year: 2026,
       month: 6,
-      role: "Full-stack developer",
+      role: "Solo full-stack developer",
       problem:
         "A group of local brands, each with its own phone number, losing calls whenever nobody on the team was free, with calls, texts and voicemail spread across separate places.",
       solution:
@@ -187,9 +193,10 @@ export const site = siteSchema.parse({
       slug: "bucket-baddie",
       title: "Bucket Baddie",
       summary: "Online ordering for a Houston wing spot, wired into Square: pay online, the ticket hits the kitchen, stock counts itself.",
+      category: "Web apps",
       year: 2026,
       month: 5,
-      role: "Full-stack developer",
+      role: "Solo full-stack developer",
       problem:
         "A pick-up wing spot taking orders through Square, with the website, the kitchen's POS and the stock room all kept in step by hand, and no way for customers to see where their order was.",
       solution:
@@ -216,9 +223,10 @@ export const site = siteSchema.parse({
       slug: "the-launch-pad",
       title: "The Launch Pad",
       summary: "The full digital side of a Houston car wash: bookings, memberships, 24/7 bays, a store, and the console that runs the day.",
+      category: "Web apps",
       year: 2025,
       month: 11,
-      role: "Full-stack developer",
+      role: "Solo full-stack developer",
       problem:
         "A car wash with three businesses under one roof (24/7 self-service bays, booked detailing and an unlimited membership) plus a product range, and nothing online tying them together for drivers, staff or fleet customers.",
       solution:

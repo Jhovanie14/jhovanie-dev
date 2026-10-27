@@ -1,10 +1,11 @@
 import * as THREE from "three"
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js"
 
-import { site, yearSpan } from "@/content/site"
+import { site } from "@/content/site"
 
+import { BOARD, drawBoard } from "./board"
 import { SCREEN } from "./screen"
-import { canvasTexture, wallTexture, woodTexture, wrap } from "./textures"
+import { canvasTexture, wallTexture, woodTexture } from "./textures"
 
 export type Stop = "intro" | "projects" | "skills" | "experience" | "contact"
 export type Hotspot = { mesh: THREE.Object3D; stop: Stop | "lamp"; label: string }
@@ -248,35 +249,14 @@ export function buildRoom(scene: THREE.Scene, opts: { small: boolean; fonts: Fon
   // The board on the left wall: the roles.
   const corkFrame = rbox(0.04, 1.0, 1.56, mat("#3A2E26", { roughness: 0.8 }), 0.01)
   corkFrame.position.set(-1.975, 1.6, 0.35)
+  const boardTex = canvasTexture(BOARD.w, BOARD.h, (ctx) => drawBoard(ctx, { selected: null, hover: null, since: 0 }, site.experience, fonts, 0, true))
   const boardFace = new THREE.Mesh(
     new THREE.PlaneGeometry(1.48, 0.92),
     new THREE.MeshStandardMaterial({
       roughness: 0.9,
       emissive: "#ffffff",
       emissiveIntensity: 0.08,
-      map: canvasTexture(1480, 920, (ctx) => {
-        ctx.fillStyle = "#F2EDE6"
-        ctx.fillRect(0, 0, 1480, 920)
-        ctx.fillStyle = "#15181B"
-        ctx.font = `800 64px ${fonts.display}`
-        ctx.fillText("Experience", 64, 120)
-        // Roles share the board's height; with more than three there is only room for the title, company and years.
-        const step = Math.min(220, 740 / Math.max(1, site.experience.length))
-        site.experience.forEach((e, i) => {
-          const y = 230 + i * step
-          ctx.fillStyle = ORANGE
-          ctx.fillRect(64, y - 34, 16, 16)
-          ctx.fillStyle = "#15181B"
-          ctx.font = `600 48px ${fonts.body}`
-          ctx.fillText(e.title, 100, y)
-          ctx.fillStyle = "#55555C"
-          ctx.font = `400 34px ${fonts.body}`
-          ctx.fillText(`${e.company} · ${yearSpan(e.start, e.end)}`, 100, y + 52)
-          wrap(ctx, e.highlights.join(" "), 1300)
-            .slice(0, step >= 200 ? 2 : 0)
-            .forEach((line, l) => ctx.fillText(line, 100, y + 100 + l * 44))
-        })
-      }),
+      map: boardTex,
     })
   )
   boardFace.position.set(-1.952, 1.6, 0.35)
@@ -318,5 +298,5 @@ export function buildRoom(scene: THREE.Scene, opts: { small: boolean; fonts: Fon
   scene.add(note)
   hotspots.push({ mesh: note, stop: "contact", label: "Note: get in touch" })
 
-  return { hemi, lamp, screenLight, bulbMat, screenTex, screen, hotspots }
+  return { hemi, lamp, screenLight, bulbMat, screenTex, screen, boardTex, board: boardFace, hotspots }
 }

@@ -3,14 +3,15 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import * as THREE from "three"
-import { IconArrowDown, IconArrowLeft, IconArrowsMaximize, IconCheck, IconCopy } from "@tabler/icons-react"
+import { IconArrowDown, IconArrowLeft, IconArrowRight, IconArrowsMaximize, IconCheck, IconCopy } from "@tabler/icons-react"
 
 import { site, yearSpan } from "@/content/site"
 import { gsap, ScrollTrigger } from "@/lib/gsap"
 import { cn } from "@/lib/utils"
 
+import { BOARD_TIME, boardHit, drawBoard, type BoardState } from "./board"
 import { buildRoom, type Stop } from "./room"
-import { drawScreen, screenHit, shotOnScreen, type ScreenState, type Shots } from "./screen"
+import { ALL, drawScreen, folderItems, folders, PAGE, pageCount, screenHit, shotOnScreen, SLIDE_TIME, type ScreenState, type Shots } from "./screen"
 import { ShotViewer } from "./shot-viewer"
 import { redraw } from "./textures"
 
@@ -46,15 +47,29 @@ export type ShotPaths = { src: string; alt: string; width: number; height: numbe
 
 export function DeskSite({ cv, build, shots }: { cv: string | null; build: string | null; shots: ShotPaths[] }) {
   const mount = useRef<HTMLDivElement>(null)
-  const page = useRef<HTMLDivElement>(null)
+  const scrollArea = useRef<HTMLDivElement>(null)
   const [fallback, setFallback] = useState(false)
   const [copied, setCopied] = useState(false)
   const [hint, setHint] = useState<string | null>(null)
   const [current, setCurrent] = useState<Stop>("intro")
   const [project, setProject] = useState<number | null>(null)
   // The 3D side reads and writes the open project through this bridge.
-  const bridge = useRef<{ open: (i: number | null, image: number) => void }>({ open: () => {} })
+  const bridge = useRef<{ open: (i: number | null, image: number, page: number, folder: string) => void; role: (i: number | null) => void }>({
+    open: () => {},
+    role: () => {},
+  })
+  // The role open on the experience board, shared with the panel.
+  const [role, setRole] = useState<number | null>(null)
   const [shot, setShot] = useState(0)
+  // The open folder of work and its page, shared by the monitor and the panel.
+  const [folder, setFolder] = useState(ALL)
+  const [page, setPage] = useState(0)
+  const items = folderItems(site.projects, folder)
+  const pages = pageCount(items.length)
+  const openFolder = (id: string) => {
+    setFolder(id)
+    setPage(0)
+  }
   // The screenshot open full size, if any; the room stops rendering underneath it.
   const [viewing, setViewing] = useState<number | null>(null)
   const frozen = useRef(false)
@@ -89,7 +104,18 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
 
     let disposed = false
     let room: ReturnType<typeof buildRoom> | null = null
-    let screenState: ScreenState = reduce ? { mode: "list", hover: null } : { mode: "off" }
+    let screenState: ScreenState = reduce ? { mode: "list", hover: null, folder: ALL, page: 0 } : { mode: "off" }
+    // The folder the list was last showing, so "All projects" on a case study returns to it.
+    let listFolder = ALL
+    let boardState: BoardState = { selected: null, hover: null, since: 0 }
+    const paintBoard = () => room && redraw(room.boardTex, (ctx) => drawBoard(ctx, boardState, site.experience, fonts, now(), reduce))
+    bridge.current.role = (i) => {
+      if (i === boardState.selected) return
+      boardState = { selected: i, hover: boardState.hover, since: now() }
+      paintBoard()
+    }
+    // Opening a role draws the camera in towards the board (0..1, eased in the render loop).
+    let zoom = 0
     const now = () => performance.now() / 1000
     // Each project's screenshots, loaded once in the browser.
     const loaded: (Shots | undefined)[] = []
@@ -110,8 +136,16 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
         .catch(() => {})
     })
 
-    bridge.current.open = (i, image) => {
-      screenState = i === null ? { mode: "list", hover: null } : { mode: "detail", index: i, image, since: now() }
+    bridge.current.open = (i, image, page, folder) => {
+      listFolder = folder
+      if (i !== null) screenState = { mode: "detail", index: i, image, since: now() }
+      else if (screenState.mode === "list" && screenState.folder !== folder) {
+        // Another folder fades in.
+        screenState = { mode: "list", hover: null, folder, page, since: now() }
+      } else if (screenState.mode === "list" && screenState.page !== page) {
+        // A new page slides in over the old one.
+        screenState = { mode: "list", hover: null, folder, page, slide: { from: screenState.page, since: now() } }
+      } else if (screenState.mode !== "off" && screenState.mode !== "boot") screenState = { mode: "list", hover: null, folder, page }
       paint()
     }
 
@@ -131,6 +165,14 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
       const pb = lb.clone().add(new THREE.Vector3(...b.pos).sub(lb).multiplyScalar(far()))
       want.pos.lerpVectors(pa, pb, t)
       want.look.lerpVectors(la, lb, t)
+      // At the board with a role open: step in, and centre on the role's card (to the right of the board, -z).
+      const near = Math.max(0, 1 - Math.abs(s - STOPS.indexOf("experience"))) * zoom
+      if (near > 0) {
+        want.pos.lerp(want.look, 0.14 * near)
+        const towardCard = new THREE.Vector3(0, 0, -0.38 * near)
+        want.pos.add(towardCard)
+        want.look.add(towardCard)
+      }
       if (camera.aspect > 1.2) {
         const right = want.look.clone().sub(want.pos).cross(new THREE.Vector3(0, 1, 0)).normalize()
         const shift = right.multiplyScalar(-0.22 * want.look.distanceTo(want.pos))
@@ -155,7 +197,7 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
     camera.position.copy(rig)
 
     const trigger = ScrollTrigger.create({
-      trigger: page.current,
+      trigger: scrollArea.current,
       start: "top top",
       end: "bottom bottom",
       onUpdate: (self) => {
@@ -186,7 +228,7 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
         }, [], 0.6)
         .to(r.screenLight, { intensity: 0.7, duration: 0.6 }, 0.6)
         .call(() => {
-          screenState = project === null ? { mode: "list", hover: null } : { mode: "detail", index: project, image: 0, since: now() }
+          screenState = project === null ? { mode: "list", hover: null, folder: ALL, page: 0 } : { mode: "detail", index: project, image: 0, since: now() }
           paint()
         }, [], 1.7)
       gsap.fromTo("[data-load]", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.6, ease: "expo.out", delay: 0.25 })
@@ -222,12 +264,18 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
       const now = pick()
       el.style.cursor = now ? "pointer" : "grab"
       setHint(now?.spot.label ?? null)
-      // Rows on the screen light up under the pointer.
+      // Roles on the board light up under the pointer.
+      const onBoard = now?.spot.mesh === room.board && now.uv ? boardHit(boardState, now.uv, site.experience.length) : null
+      if (onBoard !== boardState.hover) {
+        boardState = { ...boardState, hover: onBoard }
+        paintBoard()
+      }
+      // Cards on the screen light up under the pointer.
       if (screenState.mode === "list") {
-        const hit = now?.spot.mesh === room.screen && now.uv ? screenHit(screenState, now.uv, site.projects.length) : null
+        const hit = now?.spot.mesh === room.screen && now.uv ? screenHit(screenState, now.uv, site.projects) : null
         const hover = hit && "row" in hit ? hit.row : null
         if (hover !== screenState.hover) {
-          screenState = { mode: "list", hover }
+          screenState = { ...screenState, hover }
           paint()
         }
       }
@@ -247,10 +295,21 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
         room.bulbMat.color.set(on ? "#3A3A40" : "#FFD9A8")
         return
       }
+      // A role on the board opens it; the open one closes.
+      if (hit.spot.mesh === room.board && hit.uv) {
+        const i = boardHit(boardState, hit.uv, site.experience.length)
+        if (i !== null) setRole(i === boardState.selected ? null : i)
+      }
       if (hit.spot.mesh === room.screen && hit.uv) {
-        const target = screenHit(screenState, hit.uv, site.projects.length)
+        const target = screenHit(screenState, hit.uv, site.projects)
         if (target && "row" in target) openProject(target.row)
-        if (target && "back" in target) openProject(null)
+        if (target && "folder" in target) openFolder(target.folder)
+        if (target && "page" in target && screenState.mode === "list") setPage(screenState.page + target.page)
+        if (target && "back" in target && screenState.mode === "detail") {
+          // Back to the page of the folder the project is on.
+          setPage(Math.floor(Math.max(0, folderItems(site.projects, listFolder).indexOf(screenState.index)) / PAGE))
+          openProject(null)
+        }
         // Clicking the screenshot playing on the screen opens it full size.
         if (target && "shot" in target && screenState.mode === "detail") {
           const count = loaded[screenState.index]?.length
@@ -269,6 +328,13 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
       if (frozen.current) return
       // An open case study with screenshots keeps playing on the screen (about 30 fps).
       if (!reduce && screenState.mode === "detail" && loaded[screenState.index]?.length && frame++ % 2 === 0) paint()
+      zoom += ((boardState.selected === null ? 0 : 1) - zoom) * (reduce ? 1 : 0.08)
+      if (!reduce && now() - boardState.since < BOARD_TIME + 0.05) paintBoard()
+      // A page turn or a newly opened folder repaints every frame while it moves.
+      if (screenState.mode === "list") {
+        const moving = (screenState.slide && now() - screenState.slide.since < SLIDE_TIME + 0.05) || (screenState.since !== undefined && now() - screenState.since < 0.4)
+        if (moving) paint()
+      }
       place(progress)
       const k = reduce ? 1 : 0.06
       rig.lerp(want.pos, k)
@@ -307,8 +373,30 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
 
   // The open project drives the screen too.
   useEffect(() => {
-    bridge.current.open(project, shot)
-  }, [project, shot])
+    bridge.current.open(project, shot, page, folder)
+  }, [project, shot, page, folder])
+
+  useEffect(() => {
+    bridge.current.role(role)
+  }, [role])
+
+  // The panel's open role unfolds with the board.
+  const roleDetail = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (role === null || !roleDetail.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    gsap.fromTo(roleDetail.current, { opacity: 0, y: -6 }, { opacity: 1, y: 0, duration: 0.4, ease: "expo.out", clearProps: "all" })
+  }, [role])
+
+  // The panel's list moves too: it slides with a page turn and fades up with a new folder.
+  const list = useRef<HTMLUListElement>(null)
+  const shown = useRef({ page, folder })
+  useEffect(() => {
+    const dir = shown.current.folder === folder ? Math.sign(page - shown.current.page) : 0
+    const changed = shown.current.folder !== folder || dir !== 0
+    shown.current = { page, folder }
+    if (!changed || !list.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    gsap.fromTo(list.current, { x: dir * 40, y: dir ? 0 : 10, opacity: 0 }, { x: 0, y: 0, opacity: 1, duration: 0.45, ease: "expo.out", clearProps: "all" })
+  }, [page, folder])
 
   useEffect(() => {
     frozen.current = viewing !== null
@@ -381,7 +469,7 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
         {hint}
       </p>
 
-      <main ref={page} className="pointer-events-none relative mx-auto max-w-[90rem] px-4 sm:px-10">
+      <main ref={scrollArea} className="pointer-events-none relative mx-auto max-w-[90rem] px-4 sm:px-10">
         <section id="intro" aria-labelledby="name" className={section}>
           <div data-load className={panel}>
             <h1 id="name" className="font-heading text-[clamp(2.25rem,5vw,4.25rem)] leading-[0.95] font-extrabold tracking-[-0.02em]">
@@ -416,7 +504,14 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
           <div className={panel}>
             {open ? (
               <>
-                <button type="button" onClick={() => openProject(null)} className="flex items-center gap-2 text-[15px] font-semibold text-accent-ink">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPage(Math.floor(Math.max(0, items.indexOf(project!)) / PAGE))
+                    openProject(null)
+                  }}
+                  className="flex items-center gap-2 text-[15px] font-semibold text-accent-ink"
+                >
                   <IconArrowLeft aria-hidden stroke={2} className="size-4" /> All projects
                 </button>
                 <h2 id="projects-title" className={cn(heading, "mt-3")}>
@@ -472,10 +567,29 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
                   On the screen
                 </h2>
                 <p className="mt-1 text-muted-foreground">Open a project here or on the monitor.</p>
-                <ul className="mt-4 flex flex-col gap-1">
-                  {site.projects.map((p, i) => (
+                {/* The monitor's folders, once there is more than one kind of work. */}
+                {folders(site.projects).length > 2 && (
+                  <div role="group" aria-label="Filter projects" className="mt-4 flex flex-wrap gap-2">
+                    {folders(site.projects).map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => openFolder(f.id)}
+                        aria-pressed={folder === f.id}
+                        className={cn(
+                          "h-9 rounded-full px-4 text-[14px] font-medium transition-colors duration-150",
+                          folder === f.id ? "bg-foreground text-background" : "bg-popover text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {f.label} <span className="tabular-nums opacity-60">{f.items.length}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <ul ref={list} className="mt-4 flex flex-col gap-1">
+                  {items.slice(page * PAGE, page * PAGE + PAGE).map((i) => site.projects[i]).map((p, k) => (
                     <li key={p.slug}>
-                      <button type="button" onClick={() => openProject(i)} className="w-full rounded-lg px-3 py-2.5 text-left transition-colors duration-150 hover:bg-foreground/10">
+                      <button type="button" onClick={() => openProject(items[page * PAGE + k])} className="w-full rounded-lg px-3 py-2.5 text-left transition-colors duration-150 hover:bg-foreground/10">
                         <span className="flex items-baseline justify-between gap-4">
                           <span className="text-[1.125rem] font-semibold">{p.title}</span>
                           <span className="text-[14px] text-muted-foreground tabular-nums">{p.year}</span>
@@ -485,6 +599,31 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
                     </li>
                   ))}
                 </ul>
+                {pages > 1 && (
+                  <nav aria-label="Project pages" className="mt-4 flex items-center justify-between gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setPage(page - 1)}
+                      disabled={page === 0}
+                      aria-label="Previous projects"
+                      className="grid size-11 place-items-center rounded-full bg-popover transition-[background-color,opacity] duration-150 hover:bg-foreground/15 disabled:opacity-35"
+                    >
+                      <IconArrowLeft aria-hidden stroke={2} className="size-5" />
+                    </button>
+                    <p aria-live="polite" className="text-[14px] text-muted-foreground tabular-nums">
+                      Page {page + 1} of {pages}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setPage(page + 1)}
+                      disabled={page === pages - 1}
+                      aria-label="More projects"
+                      className="grid size-11 place-items-center rounded-full bg-popover transition-[background-color,opacity] duration-150 hover:bg-foreground/15 disabled:opacity-35"
+                    >
+                      <IconArrowRight aria-hidden stroke={2} className="size-5" />
+                    </button>
+                  </nav>
+                )}
               </>
             )}
           </div>
@@ -511,21 +650,43 @@ export function DeskSite({ cv, build, shots }: { cv: string | null; build: strin
             <h2 id="experience-title" className={heading}>
               On the wall
             </h2>
-            <ol className="mt-4 flex flex-col gap-5">
-              {site.experience.map((e) => (
+            <p className="mt-1 text-muted-foreground">Open a role here or on the board.</p>
+            <ol className="mt-4 flex flex-col gap-1">
+              {site.experience.map((e, i) => (
                 <li key={e.title + e.start}>
-                  <p className="flex items-baseline justify-between gap-4">
-                    <span className="text-[1.125rem] font-semibold">{e.title}</span>
-                    <span className="text-[14px] text-muted-foreground tabular-nums">
-                      {yearSpan(e.start, e.end)}
+                  <button
+                    type="button"
+                    onClick={() => setRole(role === i ? null : i)}
+                    aria-expanded={role === i}
+                    className={cn("w-full rounded-lg px-3 py-2.5 text-left transition-colors duration-150", role === i ? "bg-primary text-primary-foreground" : "hover:bg-foreground/10")}
+                  >
+                    <span className="flex items-baseline justify-between gap-4">
+                      <span className="text-[1.125rem] font-semibold">{e.title}</span>
+                      <span className={cn("shrink-0 text-[14px] whitespace-nowrap tabular-nums", role === i ? "text-primary-foreground/80" : "text-muted-foreground")}>{yearSpan(e.start, e.end)}</span>
                     </span>
-                  </p>
-                  <p className="text-muted-foreground">{e.company}</p>
-                  <ul className="mt-1">
-                    {e.highlights.map((h) => (
-                      <li key={h}>{h}</li>
-                    ))}
-                  </ul>
+                    <span className={cn("block", role === i ? "text-primary-foreground/80" : "text-muted-foreground")}>{e.company}</span>
+                  </button>
+                  {role === i && (
+                    <div ref={roleDetail} className="px-3 pt-3 pb-2">
+                      <ul className="flex flex-col gap-2">
+                        {e.highlights.map((h) => (
+                          <li key={h} className="flex gap-3">
+                            <span aria-hidden className="mt-2.5 size-1.5 shrink-0 rounded-full bg-primary" />
+                            {h}
+                          </li>
+                        ))}
+                      </ul>
+                      {e.stack.length > 0 && (
+                        <ul aria-label="Stack" className="mt-3 flex flex-wrap gap-1.5">
+                          {e.stack.map((t) => (
+                            <li key={t} className="rounded-full bg-popover px-3 py-1 text-[13px]">
+                              {t}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                 </li>
               ))}
             </ol>
